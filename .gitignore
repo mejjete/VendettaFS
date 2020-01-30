@@ -1,5 +1,5 @@
 #user set
 *.exe
-source\main.c
-\vscode
-source\*.vfs
+*.out
+source/main.c
+source/*.vfs
