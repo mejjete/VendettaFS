@@ -5,24 +5,6 @@ typedef unsigned char uchar;
 #define VFILE 	0x214c
 #define VDIR  	0x111c 
 #define VMAGIC	0x4d32 
-#define SUPERSIZE sizeof(struct super_block)
-#define BLOCKSIZE 1024							//size data block on disk in bytes
-
-struct vfile
-{
-	int ufi;
-	int creat_time;
-	int l_access_time;
-	int flags;
-};
-
-struct super_block
-{
-	//struct super_operation *sp_op;
-	int16_t blocksize;
-	int16_t magic_number;
-	uchar name[12];
-};
 
 struct inode_t
 {
@@ -42,7 +24,7 @@ struct inode_t
 	int generation;		//file version (used by NTFS)
 	int file_acl;		//a new permission model beyong mode bits
 	int dir_act;		//called access control list  
-}
+};
 
 /* Inodes store information about files and directories */
 /* such as file ownership, access mode (read, write,	*/

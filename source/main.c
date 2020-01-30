@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <time.h>
-//#include "../header/fstart.h"
+#include "../header/fstart.h"
 
 #define BYTE 1
 #define KBYTE BYTE * 1024
@@ -135,13 +135,55 @@ int vcreat(const char *file_name)
     printf("Not enoght space");
 }
 
-int main()
+#define SIZE 4096 * 8
+
+static int fd;
+
+int dev_write(off_t fist_block, size_t size, void *data)
 {
-    module_init("test.vfs");
-    vcreat("hello.txt");
-    info();
-
-
-    close(general_info.fdesk);
+    lseek(fd, fist_block, SEEK_SET);
+    write(fd, data, size);
     return 0;
 }
+
+int dev_read(off_t first_block, size_t size, void *dest)
+{
+    lseek(fd, first_block, SEEK_SET);
+    read(fd, dest, size);
+}
+
+int main()
+{
+    fd = open("test.txt", O_RDWR | S_IRWXU | O_CREAT);
+    struct stat buf;
+    fstat(fd, &buf);
+    printf("Size before write(): %ld\n", buf.st_size);
+    char bufg[SIZE];
+    write(fd, bufg, SIZE);
+    fstat(fd, &buf);
+    printf("Size after lseek(): %ld\n", buf.st_size);
+    //getchar();
+    char *hello = "Danil Malapura\n";
+    dev_write(3030, strlen(hello), hello);
+    char out_array[strlen(hello) + 1];
+    dev_read(3030, strlen(hello), out_array);
+    printf("Output: %s\n", out_array);
+    close(fd);
+    remove("test.txt");
+    return 0;
+}
+
+/*
+    int fd = open("test.txt", O_RDWR | S_IRWXU | O_CREAT);
+    struct stat buf;
+    fstat(fd, &buf);
+    printf("Size before write(): %ld\n", buf.st_size);
+    char bufg[SIZE];
+    write(fd, bufg, SIZE);
+    fstat(fd, &buf);
+    printf("Size after lseek(): %ld\n", buf.st_size);
+    close(fd);
+    getchar();
+    remove("test.txt");
+    //close(general_info.fdesk);
+*/
