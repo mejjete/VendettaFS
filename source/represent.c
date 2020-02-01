@@ -15,9 +15,19 @@ void info()
     printf("\tMagic Number: [%i]\n", super.magic_number);
     printf("\tAll Space: [%d]\n", super.all_space);
 
+    //bitmap info
+    size_t ibmpa;
+    size_t dbmap;
+    dev_read(IBITMAP_START_TABLE, sizeof(size_t), &ibmpa);
+    dev_read(DBITMAP_START_TABLE, sizeof(size_t), &dbmap);
+    //printf("Inode bitmap:\n\t");
+    //bitmap(ibmpa);
+    //printf("Data bitmap:\n\t");
+    //bitmap(dbmap);
+
     struct inode_t inode[2];
     dev_read(INODE_START_TABLE, INODESIZE * 2, inode);
-    printf("LOG\n");
+    printf("\nLOG\n");
     //inode info
     for(int i = 0; i < 2; i++)
     {
@@ -52,7 +62,6 @@ bool module_init(const char *path)
     test.free_space = 4096 - SUPERSIZE;
     test.magic_number = VMAGIC;
     strcpy(test.fs_name, "vendetta fs");
-    //printf("module: Super Block Initialized\n");
     
     char temp[KBYTE * 4];
     //init super_block
@@ -60,10 +69,19 @@ bool module_init(const char *path)
     write(fd, temp, 4096 - SUPERSIZE);    
     printf("module: Super Block Initialized\n");    
     
-    //init inode and data bitmap block
-    write(fd, temp, 4096);
-    write(fd, temp, 4096);
-    printf("module: Inode/data bitmap initialized\n");
+    //init inode bitmap block
+    //availaible only 64 inode to indexing
+    size_t ibitmap = 0;
+    write(fd, &ibitmap, sizeof(size_t));
+    write(fd, temp, BLOCKSIZE - sizeof(size_t));
+    printf("module: Inode bitmap initialized\n");
+
+    //init data bitmap block
+    //availaible only 64 inode to indexing
+    size_t dbitmap = 0;
+    write(fd, &dbitmap, sizeof(size_t));
+    write(fd, temp, BLOCKSIZE - sizeof(size_t));
+    printf("module: Data bitmap initialized\n");
 
     //init inode table
     struct inode_t inode;
@@ -72,7 +90,7 @@ bool module_init(const char *path)
         write(fd, &inode, INODESIZE);
     printf("module: Inode blocks initialized\n");
 
-    //
+
     fstat(fd, &buf);
     printf("module: File Size: [%ld]\n", buf.st_size);
     // free(temp);
@@ -105,7 +123,13 @@ int vcreat(const char *file_name)
     {   
         if(inode[i].id == 0)
         {
-            inode[i].id = rand();
+            //set bitmask in bitmap into 1
+            size_t ibmap;
+            set_bitmap(&ibmap, i);
+
+            dev_write(IBITMAP_START_TABLE, sizeof(size_t), &ibmap);
+
+            inode[i].id = (INODE_START_TABLE + (INODESIZE * i));
             inode[i].size = BLOCKSIZE;
             strcpy(inode[i].name, file_name);
             dev_write(INODE_START_TABLE + (INODESIZE * i), INODESIZE, &inode[i]);
@@ -128,10 +152,43 @@ int dev_read(off_t first_block, size_t size, void *dest)
     return 0;
 }
 
-static void bitmap(unsigned n) 
+void bitmap(size_t n) 
 { 
-    unsigned i; 
+    size_t i; 
     int pos;
     for (i = 1 << 31, pos = sizeof(n); i > 0; i = i / 2, pos++) 
-        (n & i)? printf("%d bits is 1\n", pos) : pos + 0; 
+        (n & i)? printf("1") : printf("0"); 
+    printf("\n");
+} 
+
+void bin(size_t n) 
+{ 
+    /* step 1 */
+    if (n > 1) 
+        bin(n/2); 
+  
+    /* step 2 */
+    printf("%ld", n % 2); 
+} 
+
+void to_binary(size_t num)
+{
+    int r;
+    r = num % 2;
+    if(num >= 2)
+        to_binary(num / 2);
+    putchar(r == 0 ? '0' : '1');
+}
+
+bool get_bitmap(size_t num, int p)
+{
+    if(num = (1 << p) | num)
+        printf("%d bit is 1\n", p);
+    else 
+        printf("%d bit is 0\n", p);
+}
+
+static void set_bitmap(size_t *num, int p) 
+{ 
+    *num = (1 << p) | *num;
 } 
