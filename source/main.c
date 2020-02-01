@@ -8,6 +8,7 @@ int main()
 {
     module_init("test.vfs");
     vcreat("clang.txt");
+    vcreat("alex_petuh.txt");
     info();
     return 0;
 }

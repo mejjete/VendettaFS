@@ -15,15 +15,17 @@ void info()
     printf("\tMagic Number: [%i]\n", super.magic_number);
     printf("\tAll Space: [%d]\n", super.all_space);
 
-    struct inode_t inode;
-    lseek(fd, INODE_START_TABLE, SEEK_SET);
-    read(fd, &inode, INODESIZE);
+    struct inode_t inode[2];
+    dev_read(INODE_START_TABLE, INODESIZE * 2, inode);
     printf("LOG\n");
-    
     //inode info
-    printf("\tInode id:     [%d]\n", inode.id);
-    printf("\tInode size:   [%d]\n", inode.size);
-    printf("\tInode name:   [%s]\n", inode.name);
+    for(int i = 0; i < 2; i++)
+    {
+        printf("%d Inode\n", i + 1);
+        printf("\tInode id:     [%d]\n", inode[i].id);
+        printf("\tInode size:   [%d]\n", inode[i].size);
+        printf("\tInode name:   [%s]\n", inode[i].name);
+    }
 }
 
 void vsync(struct super_block *super)
@@ -68,6 +70,7 @@ bool module_init(const char *path)
     memset(&inode, 0, INODESIZE);
     for(int i = 0; i < 5; i++)
         write(fd, &inode, INODESIZE);
+    printf("module: Inode blocks initialized\n");
 
     //
     fstat(fd, &buf);
@@ -96,7 +99,8 @@ int vcreat(const char *file_name)
     }
 
     struct inode_t inode[5];
-    read(fd, inode, INODESIZE * 5);
+    dev_read(INODE_START_TABLE, INODESIZE * 5, inode);
+    // read(fd, inode, INODESIZE * 5);
     for(int i = 0; i < 5; i++)
     {   
         if(inode[i].id == 0)
@@ -104,8 +108,7 @@ int vcreat(const char *file_name)
             inode[i].id = rand();
             inode[i].size = BLOCKSIZE;
             strcpy(inode[i].name, file_name);
-            lseek(fd, INODE_START_TABLE, SEEK_SET);
-            write(fd, &inode[i], sizeof(struct inode_t));
+            dev_write(INODE_START_TABLE + (INODESIZE * i), INODESIZE, &inode[i]);
             return 0;
         }
     }
