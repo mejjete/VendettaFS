@@ -78,38 +78,7 @@ struct super_block
     char fs_name[12];
 };
 
-
 /* Inodes store information about files and directories */
 /* such as file ownership, access mode (read, write,	*/
 /* execute permissions), and file type					*/
 
-/*
-struct inode_block
-{
-	struct inode_operation *def_op;
-	struct vfile meta_file;
-	int (*creat)(struct inode*, struct dentry*, int*);
-};
-
-struct super_operations
-{
-
-};
-
-struct inode_operation
-{
-
-};
-
-struct permission
-{
-	bool read;
-	bool write;
-};
-
-struct group_desc
-{
-	
-}
-
-*/
