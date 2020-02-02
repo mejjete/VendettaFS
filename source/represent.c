@@ -16,20 +16,22 @@ void info()
     printf("\tAll Space: [%d]\n", super.all_space);
 
     //bitmap info
-    size_t ibmpa;
-    size_t dbmap;
-    dev_read(IBITMAP_START_TABLE, sizeof(size_t), &ibmpa);
-    dev_read(DBITMAP_START_TABLE, sizeof(size_t), &dbmap);
-    //printf("Inode bitmap:\n\t");
-    //bitmap(ibmpa);
-    //printf("Data bitmap:\n\t");
-    //bitmap(dbmap);
+    char *bmap = (char *) malloc(80);
+    dev_read(IBITMAP_START_TABLE, 80, bmap);
+    printf("Inode bitmap content:\n");
+    for(int i = 0; i < 80; i++)
+        printf("%c", bmap[i]);
+    
+    dev_read(DBITMAP_START_TABLE, 80, bmap);
+    printf("Data bitmap content:\n");
+    for(int i = 0; i < 80; i++)
+        putc(bmap[i], stdout);
 
-    struct inode_t inode[2];
-    dev_read(INODE_START_TABLE, INODESIZE * 2, inode);
-    printf("\nLOG\n");
     //inode info
-    for(int i = 0; i < 2; i++)
+    struct inode_t inode[3];
+    dev_read(INODE_START_TABLE, INODESIZE * 3, inode);
+    printf("\nLOG\n");
+    for(int i = 0; i < 3; i++)
     {
         printf("%d Inode\n", i + 1);
         printf("\tInode id:     [%d]\n", inode[i].id);
@@ -40,8 +42,7 @@ void info()
 
 void vsync(struct super_block *super)
 {
-    lseek(fd, 0, SEEK_SET);
-    read(fd, super, SUPERSIZE);
+    dev_read(0, SUPERSIZE, super);
 }
 
 bool module_init(const char *path)
@@ -70,27 +71,34 @@ bool module_init(const char *path)
     printf("module: Super Block Initialized\n");    
     
     //init inode bitmap block
-    //availaible only 64 inode to indexing
-    size_t ibitmap = 0;
-    write(fd, &ibitmap, sizeof(size_t));
-    write(fd, temp, BLOCKSIZE - sizeof(size_t));
+    //availaible only 80 inode to indexing
+    // size_t ibitmap = 0;
+    // write(fd, &ibitmap, sizeof(size_t));
+    // write(fd, temp, BLOCKSIZE - sizeof(size_t));
+    char bitmap[80];
+    memset(bitmap, 0, 80);
+    write(fd, bitmap, 80);
+    write(fd, temp, BLOCKSIZE - 80);
     printf("module: Inode Bitmap initialized\n");
 
     //init data bitmap block
-    //availaible only 64 inode to indexing
-    size_t dbitmap = 0;
-    write(fd, &dbitmap, sizeof(size_t));
-    write(fd, temp, BLOCKSIZE - sizeof(size_t));
+    //availaible only 80 data block to indexing
+    // size_t dbitmap = 0;
+    // write(fd, &dbitmap, sizeof(size_t));
+    // write(fd, temp, BLOCKSIZE - sizeof(size_t));
+    write(fd, bitmap, 80);
+    write(fd, temp, BLOCKSIZE - 80);
     printf("module: Data Bitmap initialized\n");
 
     //init inode table
+    //availaible only 5 inodes
     struct inode_t inode;
     memset(&inode, 0, INODESIZE);
     for(int i = 0; i < 5; i++)
         write(fd, &inode, INODESIZE);
     printf("module: Inode Blocks initialized\n");
 
-
+    //meta info
     fstat(fd, &buf);
     printf("module: File Size: [%ld]\n", buf.st_size);
     printf("module: File System Initialized\n");
@@ -113,22 +121,26 @@ int vcreat(const char *file_name)
         return -1;
     }
 
-    struct inode_t curr_inode;
-    size_t imap;
     int i;
-    dev_read(IBITMAP_START_TABLE, sizeof(size_t), &imap);
-    set_bitmap(&imap, 1);
-    bitmap(imap);
-    printf("\n");
-    getchar();
-    for(i = 0; i < sizeof(size_t) * 4; i++)
+    struct inode_t inode;
+    char *bitmap = (char *) malloc(80);
+    dev_read(IBITMAP_START_TABLE, 80, bitmap);
+    for(i = 0; i < 80; i++)
     {
-        if(get_bitmap(imap, i) == false)
+        if(bitmap[i] == 0)
+        {
+            bitmap[i] = 1;
             break;
+        }
     }
-    printf("%d index are free\n", i + 1);
-    exit(EXIT_FAILURE);
-    
+    printf("vcreat: %d index are free\n", i + 1);
+    inode.id = (INODE_START_TABLE + (INODESIZE * i));
+    inode.size = BLOCKSIZE;
+    strcpy(inode.name, file_name);
+
+    dev_write(IBITMAP_START_TABLE + i, sizeof(char), &bitmap[i]);
+    dev_write(INODE_START_TABLE + (INODESIZE * i), INODESIZE, &inode);
+    free(bitmap);
     /*
     for(int i = 0; i < 5; i++)
     {   
@@ -205,13 +217,13 @@ static void set_bitmap(size_t *num, int p)
     *num = (1 << p) | *num;
 } 
 
-/*true function
-void set_bit(size_t *num, int pos)
+
+void set_bit_t(unsigned *num, int pos)
 {
 	*num = (1 << pos) | *num;
 }
 
-void bitmap(size_t num)
+void bitmap_t(unsigned num)
 {
 	size_t i;
 	for (i = 1 << 31; i > 0; i = i / 2)
@@ -219,4 +231,3 @@ void bitmap(size_t num)
 	printf("\n");
 }
 
-*/

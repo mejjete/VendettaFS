@@ -1,15 +1,22 @@
+/*      Developed by Bastard
+ * rewrite:     file mapping mechanism (repair size of superblock e.t)
+ * rewrite:     inode/data bitmap mechanizm
+ * develop:     vwrite, vread function
+*/ 
+
+
 #include "../header/fs_funct.h"
 #include "../header/fstart.h"
 #include "../header/fs_interface.h"
 
 #define SIZE KBYTE * 8
 
-
 int main()
 {
-    int a = 0;
-    int b = (a << 1) | 0;
-    bitmap(b);
+    module_init("test.vfs");
+    vcreat("clang.txt");
+    vcreat("alex_petuh.txt");
+    info();
     /*
     module_init("test.vfs");
     vcreat("clang.txt");
