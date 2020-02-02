@@ -204,3 +204,19 @@ static void set_bitmap(size_t *num, int p)
 { 
     *num = (1 << p) | *num;
 } 
+
+/*true function
+void set_bit(size_t *num, int pos)
+{
+	*num = (1 << pos) | *num;
+}
+
+void bitmap(size_t num)
+{
+	size_t i;
+	for (i = 1 << 31; i > 0; i = i / 2)
+		(num & i) ? printf("1") : printf("0");
+	printf("\n");
+}
+
+*/
