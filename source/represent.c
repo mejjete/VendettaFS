@@ -28,15 +28,17 @@ void info()
         putc(bmap[i], stdout);
 
     //inode info
-    struct inode_t inode[3];
-    dev_read(INODE_START_TABLE, INODESIZE * 3, inode);
+    int inode_count = 2;
+    struct inode_t inode[inode_count];
+    dev_read(INODE_START_TABLE, INODESIZE * inode_count, inode);
     printf("\nLOG\n");
-    for(int i = 0; i < 3; i++)
+    for(int i = 0; i < inode_count; i++)
     {
         printf("%d Inode\n", i + 1);
         printf("\tInode id:     [%d]\n", inode[i].id);
         printf("\tInode size:   [%d]\n", inode[i].size);
         printf("\tInode name:   [%s]\n", inode[i].name);
+        printf("\tInode block:  [%d]\n", inode[i].block[i]);
     }
 }
 
@@ -64,7 +66,7 @@ bool module_init(const char *path)
     test.magic_number = VMAGIC;
     strcpy(test.fs_name, "vendetta fs");
     
-    char temp[KBYTE * 4];
+    char *temp = (char *) malloc(BLOCKSIZE);
     //init super_block
     write(fd, &test, SUPERSIZE);
     write(fd, temp, 4096 - SUPERSIZE);    
@@ -75,10 +77,7 @@ bool module_init(const char *path)
     // size_t ibitmap = 0;
     // write(fd, &ibitmap, sizeof(size_t));
     // write(fd, temp, BLOCKSIZE - sizeof(size_t));
-    char bitmap[80];
-    memset(bitmap, 0, 80);
-    write(fd, bitmap, 80);
-    write(fd, temp, BLOCKSIZE - 80);
+    write(fd, temp, BLOCKSIZE);
     printf("module: Inode Bitmap initialized\n");
 
     //init data bitmap block
@@ -86,8 +85,7 @@ bool module_init(const char *path)
     // size_t dbitmap = 0;
     // write(fd, &dbitmap, sizeof(size_t));
     // write(fd, temp, BLOCKSIZE - sizeof(size_t));
-    write(fd, bitmap, 80);
-    write(fd, temp, BLOCKSIZE - 80);
+    write(fd, temp, BLOCKSIZE);
     printf("module: Data Bitmap initialized\n");
 
     //init inode table
@@ -98,10 +96,15 @@ bool module_init(const char *path)
         write(fd, &inode, INODESIZE);
     printf("module: Inode Blocks initialized\n");
 
+    //init first 10 data block
+    for(int i = 0; i < 10; i++)
+        write(fd, temp, BLOCKSIZE);
+
     //meta info
     fstat(fd, &buf);
     printf("module: File Size: [%ld]\n", buf.st_size);
     printf("module: File System Initialized\n");
+    free(temp);
     return true;
 }
 
@@ -121,9 +124,11 @@ int vcreat(const char *file_name)
         return -1;
     }
 
-    int i;
+    int i, j;
     struct inode_t inode;
     char *bitmap = (char *) malloc(80);
+
+    //find free inode block
     dev_read(IBITMAP_START_TABLE, 80, bitmap);
     for(i = 0; i < 80; i++)
     {
@@ -133,33 +138,38 @@ int vcreat(const char *file_name)
             break;
         }
     }
-    printf("vcreat: %d index are free\n", i + 1);
-    inode.id = (INODE_START_TABLE + (INODESIZE * i));
-    inode.size = BLOCKSIZE;
-    strcpy(inode.name, file_name);
-
+    printf("\nvcreat: %d index are free\n", i + 1);
     dev_write(IBITMAP_START_TABLE + i, sizeof(char), &bitmap[i]);
-    dev_write(INODE_START_TABLE + (INODESIZE * i), INODESIZE, &inode);
-    free(bitmap);
-    /*
-    for(int i = 0; i < 5; i++)
-    {   
-        if(inode[i].id == 0)
+
+    //find free data block
+    dev_read(DBITMAP_START_TABLE, 80, bitmap);
+    for(j = 0; j < 80; j++)
+    {
+        if(bitmap[j] == 0)
         {
-            //set bitmask in bitmap into 1
-            size_t ibmap;
-            set_bitmap(&ibmap, i);
-
-            dev_write(IBITMAP_START_TABLE, sizeof(size_t), &ibmap);
-
-            inode[i].id = (INODE_START_TABLE + (INODESIZE * i));
-            inode[i].size = BLOCKSIZE;
-            strcpy(inode[i].name, file_name);
-            dev_write(INODE_START_TABLE + (INODESIZE * i), INODESIZE, &inode[i]);
-            return 0;
+            bitmap[j] = 1;
+            break;
         }
     }
-    */
+    printf("vcreat: %d data index are free\n", j + 1);
+    dev_write(DBITMAP_START_TABLE + j, sizeof(char), &bitmap[i]);
+    inode.id = (INODE_START_TABLE + (INODESIZE * i));
+    inode.size = BLOCKSIZE;
+
+    //set indirect block pointer
+    for(int db = 0; db < INDIRECT_BLOCK_POINTER; db++)
+    {
+        if(inode.block[db] == 0)
+        {
+            inode.block[db] = DATA_START_TABLE + (BLOCKSIZE * j);
+            break;
+        }  
+    }
+    strcpy(inode.name, file_name);
+
+    dev_write(IBITMAP_START_TABLE + j, sizeof(char), &bitmap[j]);
+    dev_write(INODE_START_TABLE + (INODESIZE * i), INODESIZE, &inode);
+    free(bitmap);
 }
 
 int dev_write(off_t fist_block, size_t size, void *data)
