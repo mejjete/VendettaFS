@@ -74,27 +74,25 @@ bool module_init(const char *path)
     size_t ibitmap = 0;
     write(fd, &ibitmap, sizeof(size_t));
     write(fd, temp, BLOCKSIZE - sizeof(size_t));
-    printf("module: Inode bitmap initialized\n");
+    printf("module: Inode Bitmap initialized\n");
 
     //init data bitmap block
     //availaible only 64 inode to indexing
     size_t dbitmap = 0;
     write(fd, &dbitmap, sizeof(size_t));
     write(fd, temp, BLOCKSIZE - sizeof(size_t));
-    printf("module: Data bitmap initialized\n");
+    printf("module: Data Bitmap initialized\n");
 
     //init inode table
     struct inode_t inode;
     memset(&inode, 0, INODESIZE);
     for(int i = 0; i < 5; i++)
         write(fd, &inode, INODESIZE);
-    printf("module: Inode blocks initialized\n");
+    printf("module: Inode Blocks initialized\n");
 
 
     fstat(fd, &buf);
     printf("module: File Size: [%ld]\n", buf.st_size);
-    // free(temp);
-    // write(fd, &test, sizeof(struct super_block));
     printf("module: File System Initialized\n");
     return true;
 }
@@ -109,16 +107,29 @@ int vcreat(const char *file_name)
         printf("vcreat: file name too lagre\n");
         return -1;
     }
-    struct super_block super;
     if(fd == -1)
     {
         printf("vcreat: error opening file\n");
         return -1;
     }
 
-    struct inode_t inode[5];
-    dev_read(INODE_START_TABLE, INODESIZE * 5, inode);
-    // read(fd, inode, INODESIZE * 5);
+    struct inode_t curr_inode;
+    size_t imap;
+    int i;
+    dev_read(IBITMAP_START_TABLE, sizeof(size_t), &imap);
+    set_bitmap(&imap, 1);
+    bitmap(imap);
+    printf("\n");
+    getchar();
+    for(i = 0; i < sizeof(size_t) * 4; i++)
+    {
+        if(get_bitmap(imap, i) == false)
+            break;
+    }
+    printf("%d index are free\n", i + 1);
+    exit(EXIT_FAILURE);
+    
+    /*
     for(int i = 0; i < 5; i++)
     {   
         if(inode[i].id == 0)
@@ -136,6 +147,7 @@ int vcreat(const char *file_name)
             return 0;
         }
     }
+    */
 }
 
 int dev_write(off_t fist_block, size_t size, void *data)
@@ -183,9 +195,9 @@ void to_binary(size_t num)
 bool get_bitmap(size_t num, int p)
 {
     if(num = (1 << p) | num)
-        printf("%d bit is 1\n", p);
+        return true;
     else 
-        printf("%d bit is 0\n", p);
+        return false;
 }
 
 static void set_bitmap(size_t *num, int p) 

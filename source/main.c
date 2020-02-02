@@ -7,11 +7,15 @@
 
 int main()
 {
+    int a = 0;
+    int b = (a << 1) | 0;
+    bitmap(b);
+    /*
     module_init("test.vfs");
     vcreat("clang.txt");
     vcreat("alex_petuh.txt");
     info();
-    /*
+
     int n;
     size_t num, newNum;
 

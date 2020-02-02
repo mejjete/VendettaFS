@@ -78,6 +78,15 @@ struct super_block
     char fs_name[12];
 };
 
+//file API
+extern int my_open(const char *path);
+extern int my_create(const char *path);
+extern int my_read(int fd, void *buf, int cout);
+extern int my_write(int fd, const void *buf, int cout);
+extern int my_close(int fd);
+extern int my_remove(const char *path);
+extern int my_rename(const char *old, const char *new);
+
 /* Inodes store information about files and directories */
 /* such as file ownership, access mode (read, write,	*/
 /* execute permissions), and file type					*/
