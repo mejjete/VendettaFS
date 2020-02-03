@@ -197,11 +197,10 @@ int vwrite(int fd, void *buf, int count)
     struct inode_t inode;
     dev_read(fd, INODESIZE, &inode);
     dev_read(fd, INODESIZE, &inode);
-    memset(inode.block, 0, sizeof(int) * 2);
     while(inode.block[i] != 0)
-         i++;
-    printf("%dth block are free\n", i);
-    printf("readed file: %s\ndata block: [%d]\n", inode.name, inode.block[0]);
+        i++;
+    printf("%dth block are free\n", i--);
+    printf("readed file: %s\ndata block: [%d]\n", inode.name, inode.block[i]);
     inode.used_size += count;
     inode.cursor += count;
     dev_write(inode.block[i], count, buf);
