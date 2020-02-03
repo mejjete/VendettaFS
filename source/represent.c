@@ -13,9 +13,10 @@ void info()
     printf("Super Block:\n");
     printf("\tName: [%s]\n", super.fs_name);
     printf("\tMagic Number: [%i]\n", super.magic_number);
-    printf("\tAll Space: [%d]\n", super.all_space);
+    printf("\tAll Space: [%ld]\n", super.all_space);
 
     //bitmap info
+    /*
     char *bmap = (char *) malloc(80);
     dev_read(IBITMAP_START_TABLE, 80, bmap);
     printf("Inode bitmap content:\n");
@@ -26,6 +27,7 @@ void info()
     printf("Data bitmap content:\n");
     for(int i = 0; i < 80; i++)
         putc(bmap[i], stdout);
+    */
 
     //inode info
     int inode_count = 2;
@@ -35,16 +37,11 @@ void info()
     for(int i = 0; i < inode_count; i++)
     {
         printf("%d Inode\n", i + 1);
-        printf("\tInode id:     [%d]\n", inode[i].id);
-        printf("\tInode size:   [%d]\n", inode[i].size);
-        printf("\tInode name:   [%s]\n", inode[i].name);
-        printf("\tInode block:  [%d]\n", inode[i].block[i]);
+        printf("\tInode id:             [%d]\n", inode[i].id);
+        printf("\tInode used size:      [%d]\n", inode[i].used_size);
+        printf("\tInode name:           [%s]\n", inode[i].name);
+        printf("\tInode block:          [%d]\n", inode[i].block[i]);
     }
-}
-
-void vsync(struct super_block *super)
-{
-    dev_read(0, SUPERSIZE, super);
 }
 
 bool module_init(const char *path)
@@ -61,31 +58,31 @@ bool module_init(const char *path)
         return false;
     }
     struct super_block test;
-    test.all_space = 4096;
-    test.free_space = 4096 - SUPERSIZE;
+    test.all_space = META_BLOCKSIZE;
+    test.free_space = test.all_space;
     test.magic_number = VMAGIC;
     strcpy(test.fs_name, "vendetta fs");
     
-    char *temp = (char *) malloc(BLOCKSIZE);
+    char *temp = (char *) malloc(META_BLOCKSIZE);
     //init super_block
     write(fd, &test, SUPERSIZE);
-    write(fd, temp, 4096 - SUPERSIZE);    
+    write(fd, temp, META_BLOCKSIZE - SUPERSIZE);    
     printf("module: Super Block Initialized\n");    
     
     //init inode bitmap block
     //availaible only 80 inode to indexing
     // size_t ibitmap = 0;
     // write(fd, &ibitmap, sizeof(size_t));
-    // write(fd, temp, BLOCKSIZE - sizeof(size_t));
-    write(fd, temp, BLOCKSIZE);
+    // write(fd, temp, META_BLOCKSIZE - sizeof(size_t));
+    write(fd, temp, META_BLOCKSIZE);
     printf("module: Inode Bitmap initialized\n");
 
     //init data bitmap block
     //availaible only 80 data block to indexing
     // size_t dbitmap = 0;
     // write(fd, &dbitmap, sizeof(size_t));
-    // write(fd, temp, BLOCKSIZE - sizeof(size_t));
-    write(fd, temp, BLOCKSIZE);
+    // write(fd, temp, META_BLOCKSIZE - sizeof(size_t));
+    write(fd, temp, META_BLOCKSIZE);
     printf("module: Data Bitmap initialized\n");
 
     //init inode table
@@ -98,7 +95,7 @@ bool module_init(const char *path)
 
     //init first 10 data block
     for(int i = 0; i < 10; i++)
-        write(fd, temp, BLOCKSIZE);
+        write(fd, temp, META_BLOCKSIZE);
 
     //meta info
     fstat(fd, &buf);
@@ -108,7 +105,7 @@ bool module_init(const char *path)
     return true;
 }
 
-int vcreat(const char *file_name)
+int dev_creat(const char *file_name)
 {
     srand(time(NULL));
     if(fd == 0 || file_name == NULL )
@@ -138,7 +135,7 @@ int vcreat(const char *file_name)
             break;
         }
     }
-    printf("\nvcreat: %d index are free\n", i + 1);
+    //printf("\nvcreat: %d index are free\n", i + 1);
     dev_write(IBITMAP_START_TABLE + i, sizeof(char), &bitmap[i]);
 
     //find free data block
@@ -155,6 +152,8 @@ int vcreat(const char *file_name)
     dev_write(DBITMAP_START_TABLE + j, sizeof(char), &bitmap[i]);
     inode.id = (INODE_START_TABLE + (INODESIZE * i));
     inode.size = BLOCKSIZE;
+    inode.used_size = 0;
+    inode.cursor = inode.id;
 
     //set indirect block pointer
     for(int db = 0; db < INDIRECT_BLOCK_POINTER; db++)
@@ -170,6 +169,7 @@ int vcreat(const char *file_name)
     dev_write(IBITMAP_START_TABLE + j, sizeof(char), &bitmap[j]);
     dev_write(INODE_START_TABLE + (INODESIZE * i), INODESIZE, &inode);
     free(bitmap);
+    return inode.id;
 }
 
 int dev_write(off_t fist_block, size_t size, void *data)
@@ -186,6 +186,40 @@ int dev_read(off_t first_block, size_t size, void *dest)
     return 0;
 }
 
+static inline void vsync(struct super_block *super)
+{
+    dev_read(0, SUPERSIZE, super);
+}
+
+int vwrite(int fd, void *buf, int count)
+{
+    int i = 0;
+    struct inode_t inode;
+    dev_read(fd, INODESIZE, &inode);
+    dev_read(fd, INODESIZE, &inode);
+    memset(inode.block, 0, sizeof(int) * 2);
+    while(inode.block[i] != 0)
+         i++;
+    printf("%dth block are free\n", i);
+    printf("readed file: %s\ndata block: [%d]\n", inode.name, inode.block[0]);
+    inode.used_size += count;
+    inode.cursor += count;
+    dev_write(inode.block[i], count, buf);
+    dev_write(fd, INODESIZE, &inode);
+    // exit(EXIT_FAILURE);
+    return 0;
+}
+
+int vread(int fd, void *buf, int count)
+{
+    int i;
+    struct inode_t inode;
+    dev_read(fd, INODESIZE, &inode);
+    dev_read(inode.block[0], count, buf);
+    return 0;
+}
+
+/*
 void bitmap(size_t n) 
 { 
     size_t i; 
@@ -193,16 +227,6 @@ void bitmap(size_t n)
     for (i = 1 << 31, pos = sizeof(n); i > 0; i = i / 2, pos++) 
         (n & i)? printf("1") : printf("0"); 
     printf("\n");
-} 
-
-void bin(size_t n) 
-{ 
-    /* step 1 */
-    if (n > 1) 
-        bin(n/2); 
-  
-    /* step 2 */
-    printf("%ld", n % 2); 
 } 
 
 void to_binary(size_t num)
@@ -240,4 +264,5 @@ void bitmap_t(unsigned num)
 		(num & i) ? printf("1") : printf("0");
 	printf("\n");
 }
+*/
 

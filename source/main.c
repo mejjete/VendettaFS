@@ -4,7 +4,6 @@
  * develop:     vwrite, vread function
 */ 
 
-
 #include "../header/fs_funct.h"
 #include "../header/fstart.h"
 #include "../header/fs_interface.h"
@@ -14,8 +13,12 @@
 int main()
 {
     module_init("test.vfs");
-    vcreat("clang.txt");
-    vcreat("alex_petuh.txt");
+    int a = dev_creat("clang.txt");
+    char buf[] = "There is bastard's file system"; 
+    vwrite(a, buf, strlen(buf));
+    char *dp = (char *) malloc(strlen(buf));
+    vread(a, dp, strlen(buf));
+    printf("output: \"%s\"\n", dp);
     info();
     /*
     module_init("test.vfs");
