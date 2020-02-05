@@ -41,6 +41,12 @@ void info()
         printf("\tInode used size:      [%d]\n", inode[i].used_size);
         printf("\tInode name:           [%s]\n", inode[i].name);
         printf("\tInode block:          [%d]\n", inode[i].block[i]);
+        if(inode[i].type == VFILE)
+            printf("\tInode is file\n");
+        else if(inode[i].type == VDIR)
+            printf("\tInode is directory\n");
+        else 
+            printf("\tInode is something else\n");
     }
 }
 
@@ -58,7 +64,7 @@ bool module_init(const char *path)
         return false;
     }
     struct super_block test;
-    test.all_space = META_BLOCKSIZE;
+    test.all_space = 54528;
     test.free_space = test.all_space;
     test.magic_number = VMAGIC;
     strcpy(test.fs_name, "vendetta fs");
@@ -105,9 +111,8 @@ bool module_init(const char *path)
     return true;
 }
 
-int dev_creat(const char *file_name)
+int dev_creat(const char *file_name, int type)
 {
-    srand(time(NULL));
     if(fd == 0 || file_name == NULL )
         return -1;
     if(strlen(file_name) > MAX_FILE_NAME)
@@ -135,9 +140,8 @@ int dev_creat(const char *file_name)
             break;
         }
     }
-    //printf("\nvcreat: %d index are free\n", i + 1);
-    dev_write(IBITMAP_START_TABLE + i, sizeof(char), &bitmap[i]);
-
+    //dev_write(IBITMAP_START_TABLE + i, sizeof(char), &bitmap[i]);
+    
     //find free data block
     dev_read(DBITMAP_START_TABLE, 80, bitmap);
     for(j = 0; j < 80; j++)
@@ -148,12 +152,15 @@ int dev_creat(const char *file_name)
             break;
         }
     }
-    printf("vcreat: %d data index are free\n", j + 1);
     dev_write(DBITMAP_START_TABLE + j, sizeof(char), &bitmap[i]);
+
+    //set inode information
     inode.id = (INODE_START_TABLE + (INODESIZE * i));
     inode.size = BLOCKSIZE;
     inode.used_size = 0;
     inode.cursor = inode.id;
+    inode.type = type;
+    strcpy(inode.name, file_name);
 
     //set indirect block pointer
     for(int db = 0; db < INDIRECT_BLOCK_POINTER; db++)
@@ -164,7 +171,6 @@ int dev_creat(const char *file_name)
             break;
         }  
     }
-    strcpy(inode.name, file_name);
 
     dev_write(IBITMAP_START_TABLE + j, sizeof(char), &bitmap[j]);
     dev_write(INODE_START_TABLE + (INODESIZE * i), INODESIZE, &inode);
@@ -196,16 +202,13 @@ int vwrite(int fd, void *buf, int count)
     int i = 0;
     struct inode_t inode;
     dev_read(fd, INODESIZE, &inode);
-    dev_read(fd, INODESIZE, &inode);
     while(inode.block[i] != 0)
         i++;
-    printf("%dth block are free\n", i--);
-    printf("readed file: %s\ndata block: [%d]\n", inode.name, inode.block[i]);
+    i--;
     inode.used_size += count;
     inode.cursor += count;
     dev_write(inode.block[i], count, buf);
     dev_write(fd, INODESIZE, &inode);
-    // exit(EXIT_FAILURE);
     return 0;
 }
 
@@ -216,6 +219,19 @@ int vread(int fd, void *buf, int count)
     dev_read(fd, INODESIZE, &inode);
     dev_read(inode.block[0], count, buf);
     return 0;
+}
+
+int get_free_block()
+{
+    int i;
+    char *bmap = (char *) malloc(80);
+    dev_read(DBITMAP_START_TABLE, 80, bmap);
+    while(bmap[i] != 0)
+        ;
+    i--;
+    bmap[i] = 1;
+    dev_write(DBITMAP_START_TABLE + i, sizeof(char), &bmap[i]);
+    return DATA_START_TABLE + (BLOCKSIZE * i);
 }
 
 /*
