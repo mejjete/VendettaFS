@@ -39,6 +39,7 @@ void info()
         printf("%d Inode\n", i + 1);
         printf("\tInode id:             [%d]\n", inode[i].id);
         printf("\tInode used size:      [%d]\n", inode[i].used_size);
+        printf("\tInode size:           [%d]\n", inode[i].size);
         printf("\tInode name:           [%s]\n", inode[i].name);
         printf("\tInode block:          [%d]\n", inode[i].block[i]);
         if(inode[i].type == VFILE)
@@ -223,9 +224,24 @@ int vwrite(int fd, void *buf, int count)
     while(inode.block[i] != 0)
         i++;
     i--;
+
+    //if unused space not enought
+    printf("free space: %d\n", (inode.size - inode.used_size));
+    if(count > (inode.size - inode.used_size))
+    {
+        int space = inode.size - inode.used_size;
+        inode.block[i++] = get_free_block();
+        inode.size += BLOCKSIZE;
+        dev_write(inode.block[i - 1], space, buf);
+        dev_write(inode.block[i], count - space, buf + space);
+    }
+    else 
+    {
+        inode.cursor += count;
+        dev_write(inode.block[i], count, buf);
+    }
+
     inode.used_size += count;
-    inode.cursor += count;
-    dev_write(inode.block[i], count, buf);
     dev_write(fd, INODESIZE, &inode);
     return 0;
 }

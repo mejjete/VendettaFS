@@ -8,7 +8,6 @@
 #include "../header/fstart.h"
 #include "../header/fs_interface.h"
 
-#define SIZE KBYTE * 8
 
 int main()
 {
@@ -16,9 +15,11 @@ int main()
     int a = dev_creat("clang.txt", VFILE);
     int b = dev_creat("gcc.txt", VDIR);
     char buf[] = "There is bastard's file system"; 
+    char *nu = (char *) malloc(KBYTE + 10);
     vwrite(a, buf, strlen(buf));
+    vwrite(a, nu, KBYTE + 10);
     char *dp = (char *) malloc(strlen(buf));
-    printf("Current cursor: %d\n", vseek(a, 0, VSEEK_SET));
+    vseek(a, 0, VSEEK_SET);
     vread(a, dp, strlen(buf));
     printf("output: \"%s\"\n", dp);
     info();
