@@ -268,6 +268,35 @@ int get_free_block()
     return DATA_START_TABLE + (BLOCKSIZE * i);
 }
 
+int move_cursor(struct inode_t *inode, int cdest)
+{
+    if(inode == NULL || cdest == 0)
+        return -1;
+    int i = 0;
+    while(inode->block[i] != 0)
+    {
+        if(inode->cursor >= inode->block[i] && inode->cursor <= (inode->block[i] + BLOCKSIZE))
+        {  
+            // printf("Range of cursor between: %d - %d\n", inode->block[i], inode->block[i] + BLOCKSIZE);
+            if((inode->cursor + cdest) <= inode->block[i] + BLOCKSIZE)
+            {
+                //printf("Moving without steping\n");
+                inode->cursor += cdest;
+                return 0;
+            }
+            else   
+            {
+                // printf("Movind WITH steping\n");
+                cdest -= (inode->block[i] + BLOCKSIZE) - inode->cursor;
+                inode->cursor = inode->block[i + 1] + cdest; 
+                return 0;
+            }
+        }
+        i++;
+    }
+    return -1;
+}
+
 /*
 void bitmap(size_t n) 
 { 
