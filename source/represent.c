@@ -207,11 +207,17 @@ int vseek(int fd, off_t offset, int whence)
         i++;
     --i;
     if(whence == VSEEK_SET)
-        inode.cursor = inode.block[i];
+    {
+        inode.cursor = inode.block[0];
+        move_cursor(&inode, offset);
+        //inode.cursor = inode.block[i] + offset;
+    }
     else if(whence == VSEEK_END)
-        inode.cursor = inode.block[i] + inode.used_size;
+        move_cursor(&inode, inode.block[i] + inode.used_size);
+        //inode.cursor = inode.block[i] + inode.used_size;
     else if(whence == VSEEK_CUR)
-        inode.cursor += offset;
+        move_cursor(&inode, offset);
+        //inode.cursor += offset;
     dev_write(fd, INODESIZE, &inode);
     return inode.cursor;
 }
@@ -273,11 +279,12 @@ int move_cursor(struct inode_t *inode, int cdest)
     if(inode == NULL || cdest == 0)
         return -1;
     int i = 0;
+    //printf("data[i]: %d\ndata[i+1]: %d\n", inode->block[0], inode->block[1]);
     while(inode->block[i] != 0)
     {
         if(inode->cursor >= inode->block[i] && inode->cursor <= (inode->block[i] + BLOCKSIZE))
         {  
-            // printf("Range of cursor between: %d - %d\n", inode->block[i], inode->block[i] + BLOCKSIZE);
+            //printf("Range of cursor between: %d - %d\n", inode->block[i], inode->block[i] + BLOCKSIZE);
             if((inode->cursor + cdest) <= inode->block[i] + BLOCKSIZE)
             {
                 //printf("Moving without steping\n");
@@ -286,7 +293,7 @@ int move_cursor(struct inode_t *inode, int cdest)
             }
             else   
             {
-                // printf("Movind WITH steping\n");
+                //printf("Movind WITH steping\n");
                 cdest -= (inode->block[i] + BLOCKSIZE) - inode->cursor;
                 inode->cursor = inode->block[i + 1] + cdest; 
                 return 0;

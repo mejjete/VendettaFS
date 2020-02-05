@@ -15,15 +15,6 @@ int main()
     int a = dev_creat("clang.txt", VFILE);
     int b = dev_creat("gcc.txt", VDIR);
 
-    struct inode_t inode;
-    dev_read(a, INODESIZE, &inode);
-    inode.block[0] = 34816;
-    //inode.block[1] = 33792;
-    inode.block[1] = 32768;
-    inode.cursor = inode.block[0]; 
-    move_cursor(&inode, 1200);
-    printf("Cursor: %d\n", inode.cursor);
-    exit(EXIT_FAILURE);
 
     char buf[] = "There is bastard's file system"; 
     //char *nu = (char *) malloc(KBYTE);
