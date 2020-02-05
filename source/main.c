@@ -1,7 +1,7 @@
 /*      Developed by Bastard
  * rewrite:     file mapping mechanism (repair size of superblock e.t)
  * rewrite:     inode/data bitmap mechanizm
- * develop:     vwrite, vread function
+ * develop:     advanced write/read functions
 */ 
 
 #include "../header/fs_funct.h"
@@ -18,6 +18,7 @@ int main()
     char buf[] = "There is bastard's file system"; 
     vwrite(a, buf, strlen(buf));
     char *dp = (char *) malloc(strlen(buf));
+    printf("Current cursor: %d\n", vseek(a, 0, VSEEK_SET));
     vread(a, dp, strlen(buf));
     printf("output: \"%s\"\n", dp);
     info();

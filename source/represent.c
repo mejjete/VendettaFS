@@ -158,7 +158,6 @@ int dev_creat(const char *file_name, int type)
     inode.id = (INODE_START_TABLE + (INODESIZE * i));
     inode.size = BLOCKSIZE;
     inode.used_size = 0;
-    inode.cursor = inode.id;
     inode.type = type;
     strcpy(inode.name, file_name);
 
@@ -168,6 +167,7 @@ int dev_creat(const char *file_name, int type)
         if(inode.block[db] == 0)
         {
             inode.block[db] = DATA_START_TABLE + (BLOCKSIZE * j);
+            inode.cursor = inode.block[db];
             break;
         }  
     }
@@ -195,6 +195,24 @@ int dev_read(off_t first_block, size_t size, void *dest)
 static inline void vsync(struct super_block *super)
 {
     dev_read(0, SUPERSIZE, super);
+}
+
+int vseek(int fd, off_t offset, int whence)
+{
+    int i = 0;
+    struct inode_t inode;
+    dev_read(fd, INODESIZE, &inode);
+    while(inode.block[i] != 0) 
+        i++;
+    --i;
+    if(whence == VSEEK_SET)
+        inode.cursor = inode.block[i];
+    else if(whence == VSEEK_END)
+        inode.cursor = inode.block[i] + inode.used_size;
+    else if(whence == VSEEK_CUR)
+        inode.cursor += offset;
+    dev_write(fd, INODESIZE, &inode);
+    return inode.cursor;
 }
 
 int vwrite(int fd, void *buf, int count)
@@ -226,7 +244,7 @@ int get_free_block()
     int i;
     char *bmap = (char *) malloc(80);
     dev_read(DBITMAP_START_TABLE, 80, bmap);
-    while(bmap[i] != 0)
+    while(bmap[i++] != 0)
         ;
     i--;
     bmap[i] = 1;

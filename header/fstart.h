@@ -46,6 +46,10 @@ struct inode_t;
 #define FILE_NULL   0x70
 #define FILE_RONLY  0x80
 #define FILE_WONLY  0x90   
+//for vseek
+#define VSEEK_SET	0x111c
+#define VSEEK_END	0x113c
+#define VSEEK_CUR	0x115c
 
 /* Inodes store information about files and directories */
 /* such as file ownership, access mode (read, write,	*/
