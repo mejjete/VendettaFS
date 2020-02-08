@@ -328,25 +328,25 @@ int move_cursor(struct inode_t *inode, int cdest)
             }
             else 
             {
-                printf("Negative Number!\n");
+                // printf("Negative Number!\n");
                 if(-cdest <= BLOCKSIZE && (inode->cursor - inode->block[i - 1]) >= -cdest)
                 {
-                    printf("Moving without stepping\n");
+                    // printf("Moving without stepping\n");
                     inode->cursor += cdest;
                     return 0;
                 }
                 else 
                 {
-                    printf("Moving WITH reverse stepping\n");
+                    // printf("Moving WITH reverse stepping\n");
                     j = i;
                     int temp;
                     int temp_cpy = cdest;
                     int curs = inode->cursor;
-                    printf("Cursor: [%d]\n", curs);
+                    // printf("Cursor: [%d]\n", curs);
                     while(curs - inode->block[j] >= -curs)
                     {
-                        printf("Inode block[j]: [%d]\n", inode->block[j]);
-                        printf("Current temp: [%d]\n", temp_cpy);
+                        // printf("Inode block[j]: [%d]\n", inode->block[j]);
+                        // printf("Current temp: [%d]\n", temp_cpy);
                         temp_cpy += (curs - inode->block[j]);
                         if(temp_cpy >= 0)
                             break;
@@ -354,15 +354,14 @@ int move_cursor(struct inode_t *inode, int cdest)
                         curs = inode->block[j - 1] + BLOCKSIZE;
                         j--;
                     }
-                    
-                    printf("--------------------------------------------------------\n");
-                    printf("Estimated range of destination: from    [%d] to [%d]\n", inode->block[j], inode->block[j] + BLOCKSIZE);
-                    printf("Estimated cdest value:                  [%d]\n", temp);
-                    printf("Estimated futher cursor position:       [%d]\n", inode->block[j] + temp_cpy);
-                    printf("--------------------------------------------------------\n");
-                    getchar();
-                    //cdest -= inode->block[i + 1] - inode->cursor;
+                    // printf("--------------------------------------------------------\n");
+                    // printf("Estimated range of destination: from    [%d] to [%d]\n", inode->block[j], inode->block[j] + BLOCKSIZE);
+                    // printf("Estimated cdest value:                  [%d]\n", temp);
+                    // printf("Estimated futher cursor position:       [%d]\n", inode->block[j] + temp_cpy);
+                    // printf("--------------------------------------------------------\n");
+                    // getchar();
                     inode->cursor = inode->block[j] + temp_cpy; 
+                    return 0;
                 }
             }
         }
