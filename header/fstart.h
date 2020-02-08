@@ -89,12 +89,6 @@ struct super_block
     char fs_name[12];
 };
 
-struct inter_finfo
-{
-	int fdesk;
-	int cursor;
-};
-
 //file API
 extern int my_open(const char *path);
 extern int my_create(const char *path);

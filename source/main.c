@@ -1,7 +1,6 @@
 /*      Developed by Bastard
  * fix:         file mapping mechanism (repair size of superblock e.t)
  * fix:         inode/data bitmap mechanizm
- * fix:         mechanism of moving cursor
  * develop:     advanced write/read functions
 */ 
 
@@ -14,30 +13,34 @@ int main()
 {
     module_init("test.vfs");
     int a = dev_creat("clang.txt", VFILE);
-    int b = dev_creat("gcc.txt", VDIR);
+    //int b = dev_creat("gcc.txt", VDIR);
 
     struct inode_t inode;
     dev_read(a, INODESIZE, &inode);
-    inode.block[0] = 37888;
-    //inode.block[1] = 33792;
-    //inode.block[2] = 34816;
-    inode.block[1] = 35840;
-    inode.block[2] = 36865;
-    inode.block[3] = 32768;
-    inode.block[4] = 35840; 
+    inode.block[0] = 32768;
+    inode.block[1] = 34816;
+    inode.block[2] = 33792;
+    inode.block[3] = 35840;
+    inode.block[4] = 36864;
+    inode.block[5] = 37888;
+    inode.block[6] = 38912;
     dev_write(a, INODESIZE, &inode);
 
-    vseek(a, 3132, VSEEK_SET);
-    printf("After -1500 moving: [%d]\n", vseek(a, -1500, VSEEK_CUR));
-    //printf("After 2 moving: [%d]\n", vseek(a, -2300, VSEEK_CUR));
+    //writing
+    int size = 1500;
+    char *wbuf = (char *) malloc(size);
+    memset(wbuf, 0, size);
+    vwrite(a, wbuf, 100);
+    vwrite(a, wbuf, size);
+
+    //reading
+    int i; 
+    char *rbuf = (char *) malloc(size);
+    vread(a, rbuf, size);
+    while(rbuf[i] == 0 && i < size)
+        i++;
+    printf("Count of 5 int: %d\n", i);
     //info();
-    exit(EXIT_FAILURE);
-    char buf[] = "There is bastard's file system"; 
-    //char *nu = (char *) malloc(KBYTE);
-    
-    vwrite(a, buf, strlen(buf));
-    //vwrite(a, nu, KBYTE);
-    info();
 
     return 0;
 }

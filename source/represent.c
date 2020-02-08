@@ -41,7 +41,10 @@ void info()
         printf("\tInode used size:      [%d]\n", inode[i].used_size);
         printf("\tInode size:           [%d]\n", inode[i].size);
         printf("\tInode name:           [%s]\n", inode[i].name);
-        printf("\tInode block:          [%d]\n", inode[i].block[i]);
+        printf("\tInode block:        ");
+        for(int j = 0; j < 3; j++)
+            printf("  [%d] ", inode[i].block[j]);
+        printf("\n");
         if(inode[i].type == VFILE)
             printf("\tInode is file\n");
         else if(inode[i].type == VDIR)
@@ -227,32 +230,67 @@ int vseek(int fd, off_t offset, int whence)
 
 int vwrite(int fd, void *buf, int count)
 {
-    int i = 0;
+    int i = 0, j = 0;;
+    //newr - neew to write, wd - writted
+    int newr = count, wd = 0;
     struct inode_t inode;
     dev_read(fd, INODESIZE, &inode);
+    if(inode.type == VDIR)
+    {
+        printf("write: cannot write into a directory\n");
+        exit(EXIT_FAILURE);
+    }
     while(inode.block[i] != 0)
-        i++;
-    i--;
-
-    //if unused space not enought
-    printf("free space: %d\n", (inode.size - inode.used_size));
-    if(count > (inode.size - inode.used_size))
     {
-        int space = inode.size - inode.used_size;
-        inode.block[i++] = get_free_block();
-        inode.size += BLOCKSIZE;
-        dev_write(inode.block[i - 1], space, buf);
-        dev_write(inode.block[i], count - space, buf + space);
-    }
-    else 
-    {
-        inode.cursor += count;
-        dev_write(inode.block[i], count, buf);
-    }
+        if(inode.cursor >= inode.block[i] && inode.cursor <= inode.block[i] + BLOCKSIZE)
+        {
+            int toend = (inode.block[i] + BLOCKSIZE) - inode.cursor;
+            if(toend < count)
+            {
+                printf("Writting WITH stepping\n");
+                j = i;
+                dev_write(inode.cursor, toend, buf + wd);
+                move_cursor(&inode, toend);
+                wd += toend;
+                newr -= wd;
 
-    inode.used_size += count;
-    dev_write(fd, INODESIZE, &inode);
-    return 0;
+                while(1) 
+                {
+                    if(inode.block[j] == 0)
+                    {
+                        inode.block[j] = get_free_block();
+                        inode.size += BLOCKSIZE;
+                        inode.blocks++;   
+                    }
+                    if(newr <= BLOCKSIZE)
+                    {
+                        dev_write(inode.block[j], newr, buf + wd);
+                        move_cursor(&inode, newr);
+                        inode.used_size += newr;
+                        printf("Last Cursor: [%d]\n", inode.cursor);
+                        dev_write(fd, INODESIZE, &inode);
+                        return 0;
+                    }
+                    dev_write(inode.block[j], BLOCKSIZE, buf + wd);
+                    move_cursor(&inode, BLOCKSIZE);
+                    inode.used_size += BLOCKSIZE;
+                    wd += BLOCKSIZE;
+                    newr -= BLOCKSIZE;
+                    printf("writted: [%d]\tntw: [%d]\n", wd, newr);
+                    j++;
+                }
+            }
+            else 
+            {
+                printf("Writting WITHOUT stepping\n");
+                dev_write(inode.cursor, count, buf);
+                move_cursor(&inode, count);
+                dev_write(fd, INODESIZE, &inode);
+                return 0;
+            }
+        }
+    }
+    return -1;
 }
 
 int vread(int fd, void *buf, int count)
