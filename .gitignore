@@ -3,4 +3,4 @@
 *.out
 source/main.c
 source/*.vfs
-.vscode
+.vscode/
