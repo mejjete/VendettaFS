@@ -41,7 +41,10 @@ void info()
         printf("\tInode used size:      [%d]\n", inode[i].used_size);
         printf("\tInode size:           [%d]\n", inode[i].size);
         printf("\tInode name:           [%s]\n", inode[i].name);
-        printf("\tInode block:        ");
+        if(inode[i].type == VFILE) 
+            printf("\tInode blocks:       ");
+        else 
+            printf("\tInode file blocks:  ");
         for(int j = 0; j < 3; j++)
             printf("  [%d] ", inode[i].block[j]);
         printf("\n");
@@ -130,9 +133,10 @@ int dev_creat(const char *file_name, int type)
         printf("vcreat: error opening file\n");
         return -1;
     }
-
+ 
     int i, j;
     struct inode_t inode;
+    memset(&inode, 0, INODESIZE);
     char *bitmap = (char *) malloc(80);
 
     //find free inode block
@@ -145,8 +149,22 @@ int dev_creat(const char *file_name, int type)
             break;
         }
     }
-    //dev_write(IBITMAP_START_TABLE + i, sizeof(char), &bitmap[i]);
+    dev_write(IBITMAP_START_TABLE + i, sizeof(char), &bitmap[i]);
     
+    if(type == VDIR)
+    {
+        inode.type = VDIR;
+        inode.id = (INODE_START_TABLE + (INODESIZE * i));
+        if(strchr(file_name, '.'))
+        {
+            printf("vcreat: directory cannot have \".\" in the name");
+            return -1;
+        }
+        strcpy(inode.name, file_name);
+        dev_write(INODE_START_TABLE + (INODESIZE * i), INODESIZE, &inode);
+        return inode.id;
+    }
+
     //find free data block
     dev_read(DBITMAP_START_TABLE, 80, bitmap);
     for(j = 0; j < 80; j++)
@@ -247,10 +265,11 @@ int vwrite(int fd, void *buf, int count)
             int toend = (inode.block[i] + BLOCKSIZE) - inode.cursor;
             if(toend < count)
             {
-                printf("Writting WITH stepping\n");
-                j = i;
+                // printf("Writting WITH stepping\n");
+                j = i + 1;
                 dev_write(inode.cursor, toend, buf + wd);
                 move_cursor(&inode, toend);
+                inode.used_size += toend;
                 wd += toend;
                 newr -= wd;
 
@@ -267,7 +286,7 @@ int vwrite(int fd, void *buf, int count)
                         dev_write(inode.block[j], newr, buf + wd);
                         move_cursor(&inode, newr);
                         inode.used_size += newr;
-                        printf("Last Cursor: [%d]\n", inode.cursor);
+                        // printf("Last Cursor: [%d]\n", inode.cursor);
                         dev_write(fd, INODESIZE, &inode);
                         return 0;
                     }
@@ -276,15 +295,16 @@ int vwrite(int fd, void *buf, int count)
                     inode.used_size += BLOCKSIZE;
                     wd += BLOCKSIZE;
                     newr -= BLOCKSIZE;
-                    printf("writted: [%d]\tntw: [%d]\n", wd, newr);
+                    // printf("writted: [%d]\tntw: [%d]\n", wd, newr);
                     j++;
                 }
             }
             else 
             {
-                printf("Writting WITHOUT stepping\n");
+                // printf("Writting WITHOUT stepping\n");
                 dev_write(inode.cursor, count, buf);
                 move_cursor(&inode, count);
+                inode.used_size += count;
                 dev_write(fd, INODESIZE, &inode);
                 return 0;
             }
@@ -304,13 +324,18 @@ int vread(int fd, void *buf, int count)
 
 int get_free_block()
 {
-    int i;
+    int i = 0;
     char *bmap = (char *) malloc(80);
     dev_read(DBITMAP_START_TABLE, 80, bmap);
-    while(bmap[i++] != 0)
-        ;
-    i--;
-    bmap[i] = 1;
+    while(i < 80)
+    {
+        if(bmap[i] == 0)
+        {
+            bmap[i] = 1;
+            break;
+        }
+        i++;
+    }
     dev_write(DBITMAP_START_TABLE + i, sizeof(char), &bmap[i]);
     return DATA_START_TABLE + (BLOCKSIZE * i);
 }

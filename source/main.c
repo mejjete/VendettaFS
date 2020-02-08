@@ -11,36 +11,42 @@
 
 int main()
 {
+    int i;
     module_init("test.vfs");
     int a = dev_creat("clang.txt", VFILE);
-    //int b = dev_creat("gcc.txt", VDIR);
+    int b = dev_creat("Alex", VDIR);
+ 
+    char *bmpa = (char *) malloc(80);
+    dev_read(DBITMAP_START_TABLE, 80, bmpa);
 
-    struct inode_t inode;
-    dev_read(a, INODESIZE, &inode);
-    inode.block[0] = 32768;
-    inode.block[1] = 34816;
-    inode.block[2] = 33792;
-    inode.block[3] = 35840;
-    inode.block[4] = 36864;
-    inode.block[5] = 37888;
-    inode.block[6] = 38912;
-    dev_write(a, INODESIZE, &inode);
+    char *buf = "There is bastard's file system";
+    int len = strlen(buf);
+    vwrite(a, buf, len);
 
-    //writing
-    int size = 1500;
-    char *wbuf = (char *) malloc(size);
-    memset(wbuf, 0, size);
-    vwrite(a, wbuf, 100);
-    vwrite(a, wbuf, size);
+    char *temp = (char *) malloc(1500);
+    memset(temp, 0, 1500);
+    vwrite(a, temp, 1500);
 
-    //reading
-    int i; 
-    char *rbuf = (char *) malloc(size);
-    vread(a, rbuf, size);
-    while(rbuf[i] == 0 && i < size)
-        i++;
-    printf("Count of 5 int: %d\n", i);
-    //info();
+    vseek(a, 30, VSEEK_SET);
+    char *out = (char *) malloc(500);
+    vread(a, out, 500);
+
+    for(i = 0; i < 500; i++)
+        ;
+    printf("Count of 0: %d\n", i);
+    info();
+    return 0;
+    // struct inode_t inode;
+    // dev_read(a, INODESIZE, &inode);
+    // inode.block[0] = 32768;
+    // inode.block[1] = 34816;
+    // inode.block[2] = 33792;
+    // inode.block[3] = 35840;
+    // inode.block[4] = 36864;
+    // inode.block[5] = 37888;
+    // inode.block[6] = 38912;
+    // dev_write(a, INODESIZE, &inode);
+
 
     return 0;
 }
