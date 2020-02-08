@@ -112,6 +112,7 @@ bool module_init(const char *path)
     return true;
 }
 
+
 int dev_creat(const char *file_name, int type)
 {
     if(fd == 0 || file_name == NULL )
@@ -133,7 +134,7 @@ int dev_creat(const char *file_name, int type)
 
     //find free inode block
     dev_read(IBITMAP_START_TABLE, 80, bitmap);
-    for(i = 0; i < 80; i++)
+    for(i = 0; i < INODECOUNT; i++)
     {
         if(bitmap[i] == 0)
         {
@@ -160,6 +161,7 @@ int dev_creat(const char *file_name, int type)
     inode.size = BLOCKSIZE;
     inode.used_size = 0;
     inode.type = type;
+    inode.blocks = 1;
     strcpy(inode.name, file_name);
 
     //set indirect block pointer
@@ -193,6 +195,7 @@ int dev_read(off_t first_block, size_t size, void *dest)
     return 0;
 }
 
+
 static inline void vsync(struct super_block *super)
 {
     dev_read(0, SUPERSIZE, super);
@@ -210,14 +213,11 @@ int vseek(int fd, off_t offset, int whence)
     {
         inode.cursor = inode.block[0];
         move_cursor(&inode, offset);
-        //inode.cursor = inode.block[i] + offset;
     }
     else if(whence == VSEEK_END)
         move_cursor(&inode, inode.block[i] + inode.used_size);
-        //inode.cursor = inode.block[i] + inode.used_size;
     else if(whence == VSEEK_CUR)
         move_cursor(&inode, offset);
-        //inode.cursor += offset;
     dev_write(fd, INODESIZE, &inode);
     if(inode.cursor >= DATA_START_TABLE)
         return inode.cursor;
@@ -290,21 +290,20 @@ int move_cursor(struct inode_t *inode, int cdest)
         {  
             if(cdest >= 0)
             {
-                printf("Positive number\n");
                 if(cdest <= BLOCKSIZE && (((inode->block[i] + BLOCKSIZE) - inode->cursor) >= cdest))
                 {
-                    printf("Moving WITHOUT steping\n");
+                    // printf("Moving WITHOUT steping\n");
                     inode->cursor += cdest;
                     return 0;
                 }
                 else   
                 {
-                    printf("Movind WITH steping\n");
+                    // printf("Movind WITH steping\n");
                     j = i;
                     int temp = cdest;
                     int temp_cpy;
                     int curs = inode->cursor;
-                    printf("Cursor: [%d]\n", curs);
+                    // printf("Cursor: [%d]\n", curs);
                     while(!(curs + temp <= inode->block[j] && curs + temp >= inode->block[j] + BLOCKSIZE))
                     {
                         temp -= (inode->block[j] + BLOCKSIZE) - curs;
@@ -312,15 +311,15 @@ int move_cursor(struct inode_t *inode, int cdest)
                             break;
                         temp_cpy = temp;
                         curs = inode->block[j + 1];
-                        printf("Range [%d] to [%d] not suitable\n", inode->block[j], inode->block[j + 1]);
+                        // printf("Range [%d] to [%d] not suitable\n", inode->block[j], inode->block[j + 1]);
                         //printf("Current temp: [%d]\n", temp);
                         j++;
                     }   
-                    printf("--------------------------------------------------------\n");
-                    printf("Estimated range of destination: from    [%d] to [%d]\n", inode->block[j], inode->block[j] + BLOCKSIZE);
-                    printf("Estimated cdest value:                  [%d]\n", temp_cpy);
-                    printf("Estimated futher cursor position:       [%d]\n", inode->block[j] + temp_cpy);
-                    printf("--------------------------------------------------------\n");
+                    // printf("--------------------------------------------------------\n");
+                    // printf("Estimated range of destination: from    [%d] to [%d]\n", inode->block[j], inode->block[j] + BLOCKSIZE);
+                    // printf("Estimated cdest value:                  [%d]\n", temp_cpy);
+                    // printf("Estimated futher cursor position:       [%d]\n", inode->block[j] + temp_cpy);
+                    // printf("--------------------------------------------------------\n");
                     //getchar();
                     //cdest -= inode->block[i + 1] - inode->cursor;
                     inode->cursor = inode->block[j] + temp_cpy; 
@@ -330,20 +329,42 @@ int move_cursor(struct inode_t *inode, int cdest)
             else 
             {
                 printf("Negative Number!\n");
-                if(-cdest <= BLOCKSIZE && (inode->cursor - inode->block[i]) >= -cdest)
+                if(-cdest <= BLOCKSIZE && (inode->cursor - inode->block[i - 1]) >= -cdest)
                 {
-                    printf("Moving WITHOUT stepping\n");
-                    inode->cursor -= cdest;
+                    printf("Moving without stepping\n");
+                    inode->cursor += cdest;
                     return 0;
                 }
+                else 
+                {
+                    printf("Moving WITH reverse stepping\n");
+                    j = i;
+                    int temp;
+                    int temp_cpy = cdest;
+                    int curs = inode->cursor;
+                    printf("Cursor: [%d]\n", curs);
+                    while(curs - inode->block[j] >= -curs)
+                    {
+                        printf("Inode block[j]: [%d]\n", inode->block[j]);
+                        printf("Current temp: [%d]\n", temp_cpy);
+                        temp_cpy += (curs - inode->block[j]);
+                        if(temp_cpy >= 0)
+                            break;
+                        temp = temp_cpy;
+                        curs = inode->block[j - 1] + BLOCKSIZE;
+                        j--;
+                    }
+                    
+                    printf("--------------------------------------------------------\n");
+                    printf("Estimated range of destination: from    [%d] to [%d]\n", inode->block[j], inode->block[j] + BLOCKSIZE);
+                    printf("Estimated cdest value:                  [%d]\n", temp);
+                    printf("Estimated futher cursor position:       [%d]\n", inode->block[j] + temp_cpy);
+                    printf("--------------------------------------------------------\n");
+                    getchar();
+                    //cdest -= inode->block[i + 1] - inode->cursor;
+                    inode->cursor = inode->block[j] + temp_cpy; 
+                }
             }
-            // if((inode->cursor - cdest) < inode->block[i] && cdest < 0)
-            // {
-            //     cdest -= inode->cursor - (inode->block[i - 1] + BLOCKSIZE);
-            //     inode->cursor = (inode->block[i - 1] + BLOCKSIZE) - cdest; 
-            //     return 0;
-            // }
-            //printf("Range of cursor between: %d - %d\n", inode->block[i], inode->block[i] + BLOCKSIZE);
         }
         i++;
     }

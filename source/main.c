@@ -1,6 +1,7 @@
 /*      Developed by Bastard
- * rewrite:     file mapping mechanism (repair size of superblock e.t)
- * rewrite:     inode/data bitmap mechanizm
+ * fix:         file mapping mechanism (repair size of superblock e.t)
+ * fix:         inode/data bitmap mechanizm
+ * fix:         mechanism of moving cursor
  * develop:     advanced write/read functions
 */ 
 
@@ -17,18 +18,19 @@ int main()
 
     struct inode_t inode;
     dev_read(a, INODESIZE, &inode);
-    inode.block[0] = 32768;
-    inode.block[1] = 33792;
-    inode.block[2] = 34816;
-    inode.block[3] = 35840;
-    inode.block[4] = 36865;
-    inode.block[5] = 37888;
-    inode.block[6] = 38912; 
+    inode.block[0] = 37888;
+    //inode.block[1] = 33792;
+    //inode.block[2] = 34816;
+    inode.block[1] = 35840;
+    inode.block[2] = 36865;
+    inode.block[3] = 32768;
+    inode.block[4] = 35840; 
     dev_write(a, INODESIZE, &inode);
 
-    //vseek(a, 500, VSEEK_SET);
-    printf("After 1 moving: [%d]\n", vseek(a, 1500, VSEEK_CUR));
+    vseek(a, 3132, VSEEK_SET);
+    printf("After -1500 moving: [%d]\n", vseek(a, -1500, VSEEK_CUR));
     //printf("After 2 moving: [%d]\n", vseek(a, -2300, VSEEK_CUR));
+    //info();
     exit(EXIT_FAILURE);
     char buf[] = "There is bastard's file system"; 
     //char *nu = (char *) malloc(KBYTE);
