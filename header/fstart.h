@@ -36,6 +36,7 @@ struct inode_t;
 
 #define INDIRECT_BLOCK_POINTER 15
 #define MAX_FILE_NAME 32
+#define MAX_DIR_NAME 16
 
 //FILE DEFINED MACROS
 #define FILE_DEFAULT_SIZE KBYTE

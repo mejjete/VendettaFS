@@ -67,19 +67,19 @@ bool module_init(const char *path)
     if(fd == -1)
     {
         printf("Error creating\\opening a file\n");
-        getchar();
         return false;
     }
-    struct super_block test;
-    test.all_space = 54528;
-    test.free_space = test.all_space;
-    test.magic_number = VMAGIC;
-    strcpy(test.fs_name, "vendetta fs");
+    struct super_block super;
+    super.all_space = 54528;
+    super.free_space = super.all_space;
+    super.magic_number = VMAGIC;
+    strcpy(super.fs_name, "vendetta fs");
     
     char *temp = (char *) malloc(META_BLOCKSIZE);
+    memset(temp, 0, META_BLOCKSIZE);
     //init super_block
-    write(fd, &test, SUPERSIZE);
-    write(fd, temp, META_BLOCKSIZE - SUPERSIZE);    
+    write(fd, &super, SUPERSIZE);
+    write(fd, temp, META_BLOCKSIZE - SUPERSIZE);
     printf("module: Super Block Initialized\n");    
     
     //init inode bitmap block
@@ -88,7 +88,7 @@ bool module_init(const char *path)
     // write(fd, &ibitmap, sizeof(size_t));
     // write(fd, temp, META_BLOCKSIZE - sizeof(size_t));
     write(fd, temp, META_BLOCKSIZE);
-    printf("module: Inode Bitmap initialized\n");
+    printf("module: Inode Bitmap Initialized\n");
 
     //init data bitmap block
     //availaible only 80 data block to indexing
@@ -96,19 +96,17 @@ bool module_init(const char *path)
     // write(fd, &dbitmap, sizeof(size_t));
     // write(fd, temp, META_BLOCKSIZE - sizeof(size_t));
     write(fd, temp, META_BLOCKSIZE);
-    printf("module: Data Bitmap initialized\n");
+    printf("module: Data Bitmap Initialized\n");
+
 
     //init inode table
-    //availaible only 5 inodes
-    struct inode_t inode;
-    memset(&inode, 0, INODESIZE);
     for(int i = 0; i < 5; i++)
-        write(fd, &inode, INODESIZE);
-    printf("module: Inode Blocks initialized\n");
-
-    //init first 10 data block
-    for(int i = 0; i < 10; i++)
         write(fd, temp, META_BLOCKSIZE);
+    printf("module: Inode Blocks Initialized\n");
+
+    //init data block
+    for(int i = 0; i < 80; i++)
+        write(fd, temp, BLOCKSIZE);
 
     //meta info
     fstat(fd, &buf);
@@ -286,7 +284,6 @@ int vwrite(int fd, void *buf, int count)
                         return 0;
                     }
                     dev_write(inode.block[j], BLOCKSIZE, buf + wd);
-                    printf("Wrote: %d bytes\n", BLOCKSIZE);
                     move_cursor(&inode, BLOCKSIZE);
                     inode.used_size += BLOCKSIZE;
                     wd += BLOCKSIZE;
@@ -322,6 +319,10 @@ int vread(int fd, void *buf, int count)
         printf("read: cannot read from a directory\n");
         exit(EXIT_FAILURE);
     }
+
+    if(count == 0)
+        return 0;
+    
     while(inode.block[i] != 0)
     {
         if(inode.cursor >= inode.block[i] && inode.cursor <= inode.block[i] + BLOCKSIZE)
@@ -329,7 +330,7 @@ int vread(int fd, void *buf, int count)
             int toend = (inode.block[i] + BLOCKSIZE) - inode.cursor;
             if(toend < count)
             {
-                printf("Reading WITH stepping\n");
+                // printf("Reading WITH stepping\n");
                 j = i + 1;
                 dev_read(inode.cursor, toend, buf + wd);
                 move_cursor(&inode, toend);
@@ -346,7 +347,7 @@ int vread(int fd, void *buf, int count)
                     {
                         dev_write(inode.block[j], newr, buf + wd);
                         move_cursor(&inode, newr);
-                        printf("Last Cursor: [%d]\n", inode.cursor);
+                        // printf("Last Cursor: [%d]\n", inode.cursor);
                         dev_write(fd, INODESIZE, &inode);
                         return 0;
                     }
@@ -354,13 +355,13 @@ int vread(int fd, void *buf, int count)
                     move_cursor(&inode, BLOCKSIZE);
                     wd += BLOCKSIZE;
                     newr -= BLOCKSIZE;
-                    printf("readed: [%d]\tntw: [%d]\n", wd, newr);
+                    // printf("readed: [%d]\tntw: [%d]\n", wd, newr);
                     j++;
                 }
             }
             else 
             {
-                printf("Reading WITHOUT stepping\n");
+                // printf("Reading WITHOUT stepping\n");
                 dev_read(inode.cursor, count, buf);
                 move_cursor(&inode, count);
                 dev_write(fd, INODESIZE, &inode);
