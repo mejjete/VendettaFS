@@ -128,11 +128,6 @@ int dev_creat(const char *file_name, int type)
         printf("vcreat: file name too lagre\n");
         return -1;
     }
-    if(fd == -1)
-    {
-        printf("vcreat: error opening file\n");
-        return -1;
-    }
  
     int i, j;
     struct inode_t inode;
@@ -216,7 +211,6 @@ int dev_read(off_t first_block, size_t size, void *dest)
     return 0;
 }
 
-
 static inline void vsync(struct super_block *super)
 {
     dev_read(0, SUPERSIZE, super);
@@ -284,6 +278,7 @@ int vwrite(int fd, void *buf, int count)
                     if(newr <= BLOCKSIZE)
                     {
                         dev_write(inode.block[j], newr, buf + wd);
+                        
                         move_cursor(&inode, newr);
                         inode.used_size += newr;
                         // printf("Last Cursor: [%d]\n", inode.cursor);
@@ -291,6 +286,7 @@ int vwrite(int fd, void *buf, int count)
                         return 0;
                     }
                     dev_write(inode.block[j], BLOCKSIZE, buf + wd);
+                    printf("Wrote: %d bytes\n", BLOCKSIZE);
                     move_cursor(&inode, BLOCKSIZE);
                     inode.used_size += BLOCKSIZE;
                     wd += BLOCKSIZE;
@@ -309,17 +305,71 @@ int vwrite(int fd, void *buf, int count)
                 return 0;
             }
         }
+        i++;
     }
     return -1;
 }
 
 int vread(int fd, void *buf, int count)
 {
-    int i;
+    int i = 0, j = 0;;
+    //newr - neew to write, wd - writted
+    int newr = count, wd = 0;
     struct inode_t inode;
     dev_read(fd, INODESIZE, &inode);
-    dev_read(inode.block[0], count, buf);
-    return 0;
+    if(inode.type == VDIR)
+    {
+        printf("read: cannot read from a directory\n");
+        exit(EXIT_FAILURE);
+    }
+    while(inode.block[i] != 0)
+    {
+        if(inode.cursor >= inode.block[i] && inode.cursor <= inode.block[i] + BLOCKSIZE)
+        {
+            int toend = (inode.block[i] + BLOCKSIZE) - inode.cursor;
+            if(toend < count)
+            {
+                printf("Reading WITH stepping\n");
+                j = i + 1;
+                dev_read(inode.cursor, toend, buf + wd);
+                move_cursor(&inode, toend);
+                wd += toend;
+                newr -= wd;
+
+                while(1) 
+                {
+                    if(inode.block[j] == 0)
+                    {
+                        return 0; 
+                    }
+                    if(newr <= BLOCKSIZE)
+                    {
+                        dev_write(inode.block[j], newr, buf + wd);
+                        move_cursor(&inode, newr);
+                        printf("Last Cursor: [%d]\n", inode.cursor);
+                        dev_write(fd, INODESIZE, &inode);
+                        return 0;
+                    }
+                    dev_read(inode.block[j], BLOCKSIZE, buf + wd);
+                    move_cursor(&inode, BLOCKSIZE);
+                    wd += BLOCKSIZE;
+                    newr -= BLOCKSIZE;
+                    printf("readed: [%d]\tntw: [%d]\n", wd, newr);
+                    j++;
+                }
+            }
+            else 
+            {
+                printf("Reading WITHOUT stepping\n");
+                dev_read(inode.cursor, count, buf);
+                move_cursor(&inode, count);
+                dev_write(fd, INODESIZE, &inode);
+                return 0;
+            }
+        }
+        i++;
+    }
+    return -1;
 }
 
 int get_free_block()
