@@ -30,30 +30,41 @@ void info()
     */
 
     //inode info
-    int inode_count = 2;
-    struct inode_t inode[inode_count];
-    dev_read(INODE_START_TABLE, INODESIZE * inode_count, inode);
-    printf("\nLOG\n");
-    for(int i = 0; i < inode_count; i++)
+    // int inode_count = 2;
+    // struct inode_t inode[inode_count];
+    // dev_read(INODE_START_TABLE, INODESIZE * inode_count, inode);
+    // printf("\nLOG\n");
+    // for(int i = 0; i < inode_count; i++)
+    // {
+    //     printf("%d Inode\n", i + 1);
+    //     printf("\tInode id:             [%d]\n", inode[i].id);
+    //     printf("\tInode used size:      [%d]\n", inode[i].used_size);
+    //     printf("\tInode size:           [%d]\n", inode[i].size);
+    //     printf("\tInode name:           [%s]\n", inode[i].name);
+    //     if(inode[i].type == VFILE) 
+    //         printf("\tInode blocks:       ");
+    //     else 
+    //         printf("\tInode file blocks:  ");
+    //     for(int j = 0; j < 5; j++)
+    //         printf("  [%d] ", inode[i].block[j]);
+    //     printf("\n");
+    //     if(inode[i].type == VFILE)
+    //         printf("\tInode is file\n");
+    //     else if(inode[i].type == VDIR)
+    //         printf("\tInode is directory\n");
+    //     else 
+    //         printf("\tInode is something else\n");
+    // }
+    int i = 2;
+    printf("INODE TREE:\n");
+    struct inode_t root;
+    struct inode_t buf;
+    dev_read(INODE_START_TABLE, INODESIZE, &root);
+    while(root.block[i] != 0)
     {
-        printf("%d Inode\n", i + 1);
-        printf("\tInode id:             [%d]\n", inode[i].id);
-        printf("\tInode used size:      [%d]\n", inode[i].used_size);
-        printf("\tInode size:           [%d]\n", inode[i].size);
-        printf("\tInode name:           [%s]\n", inode[i].name);
-        if(inode[i].type == VFILE) 
-            printf("\tInode blocks:       ");
-        else 
-            printf("\tInode file blocks:  ");
-        for(int j = 0; j < 3; j++)
-            printf("  [%d] ", inode[i].block[j]);
-        printf("\n");
-        if(inode[i].type == VFILE)
-            printf("\tInode is file\n");
-        else if(inode[i].type == VDIR)
-            printf("\tInode is directory\n");
-        else 
-            printf("\tInode is something else\n");
+        dev_read(root.block[i], INODESIZE, &buf);
+        printf("\t%3d   %2s   %2s   %2s   %s\n", buf.size, CHECKTYPE(buf.type), "data", "time", buf.name);
+        i++;
     }
 }
 
@@ -98,7 +109,6 @@ bool module_init(const char *path)
     write(fd, temp, META_BLOCKSIZE);
     printf("module: Data Bitmap Initialized\n");
 
-
     //init inode table
     for(int i = 0; i < 5; i++)
         write(fd, temp, META_BLOCKSIZE);
@@ -112,12 +122,28 @@ bool module_init(const char *path)
     fstat(fd, &buf);
     printf("module: File Size: [%ld]\n", buf.st_size);
     printf("module: File System Initialized\n");
+
+    //init root directory
+    cdir.id = get_free_inode();
+    strcpy(cdir.name, "root");
+    cdir.block[0] = cdir.id;
+    cdir.block[1] = 0;
+    cdir.type = VDIR;
+    cdir.size = 0;
+
+    dev_write(INODE_START_TABLE, INODESIZE, &cdir);
     free(temp);
     return true;
 }
 
+bool module_exit()
+{
+    dev_write(cdir.id, INODESIZE, &cdir);
+    return true;
+}
 
-int dev_creat(const char *file_name, int type)
+
+int dev_creat(const char *file_name, int type, int reqsize)
 {
     if(fd == 0 || file_name == NULL )
         return -1;
@@ -146,6 +172,7 @@ int dev_creat(const char *file_name, int type)
     
     if(type == VDIR)
     {
+        i = 2;
         inode.type = VDIR;
         inode.id = (INODE_START_TABLE + (INODESIZE * i));
         if(strchr(file_name, '.'))
@@ -154,7 +181,13 @@ int dev_creat(const char *file_name, int type)
             return -1;
         }
         strcpy(inode.name, file_name);
-        dev_write(INODE_START_TABLE + (INODESIZE * i), INODESIZE, &inode);
+        inode.block[0] = inode.id;
+        inode.block[1] = cdir.id;
+        while(cdir.block[i] != 0)
+            i++;
+        cdir.block[i] = inode.id;
+        dev_write(cdir.id, INODESIZE, &cdir);
+        dev_write(inode.id, INODESIZE, &inode);
         return inode.id;
     }
 
@@ -191,6 +224,12 @@ int dev_creat(const char *file_name, int type)
 
     dev_write(IBITMAP_START_TABLE + j, sizeof(char), &bitmap[j]);
     dev_write(INODE_START_TABLE + (INODESIZE * i), INODESIZE, &inode);
+
+    i = 2;
+    while(cdir.block[i] != 0)
+        i++;
+    cdir.block[i] = inode.id;
+    dev_write(cdir.id, INODESIZE, &cdir);
     free(bitmap);
     return inode.id;
 }
@@ -389,6 +428,24 @@ int get_free_block()
     }
     dev_write(DBITMAP_START_TABLE + i, sizeof(char), &bmap[i]);
     return DATA_START_TABLE + (BLOCKSIZE * i);
+}
+
+int get_free_inode()
+{
+    int i = 0;
+    char *imap = (char *) malloc(80);
+    dev_read(IBITMAP_START_TABLE, 80, imap);
+    while(i < 80)
+    {
+        if(imap[i] == 0)
+        {
+            imap[i] = 1;
+            break;
+        }
+        i++;
+    }
+    dev_write(IBITMAP_START_TABLE + i, sizeof(char), &imap[i]);
+    return INODE_START_TABLE + (INODESIZE * i);
 }
 
 int move_cursor(struct inode_t *inode, int cdest)

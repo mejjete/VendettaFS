@@ -52,6 +52,8 @@ struct inode_t;
 #define VSEEK_END	0x113c
 #define VSEEK_CUR	0x115c
 
+#define CHECKTYPE(S)	S == VFILE ? "FILE" : "DIR " 
+
 /* Inodes store information about files and directories */
 /* such as file ownership, access mode (read, write,	*/
 /* execute permissions), and file type					*/
