@@ -72,17 +72,24 @@ void info()
 bool module_init(const char *path)
 {
     struct stat buf;
+    int offlag = O_RDWR;
+    if(stat(path, &buf) == 0)
+    {
+        fd = open(path, O_RDWR);
+        dev_read(INODE_START_TABLE, INODESIZE, &cdir);
+        strcpy(current_path, cdir.name);
+        return true;
+    }
     mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-    fd = open("test.vfs", O_RDWR | O_CREAT | O_TRUNC, mode);
-    //fd = creat(path, S_IRWXU | O_RDWR);
-    //fd = open("test.vfs", O_RDWR | O_CREAT);
+    fd = open(path, O_RDWR | O_CREAT, mode);
+
     if(fd == -1)
     {
         printf("Error creating\\opening a file\n");
         return false;
     }
     struct super_block super;
-    super.all_space = 54528;
+    super.all_space = 114688;
     super.free_space = super.all_space;
     super.magic_number = VMAGIC;
     strcpy(super.fs_name, "vendetta fs");
@@ -140,6 +147,7 @@ bool module_init(const char *path)
 bool module_exit()
 {
     dev_write(cdir.id, INODESIZE, &cdir);
+    close(fd);
     return true;
 }
 

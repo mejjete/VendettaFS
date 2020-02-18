@@ -30,10 +30,13 @@ void grap_parser()
             scanf("%s", flags);
             change_dir(flags);
         }
+        else if(strcmp(command, "rem") == 0)
+        {
+            scanf("%s", flags);
+            vremove(flags);
+        }
         else if(strcmp(command, "clear") == 0)
             system("clear");
-        else if(strcmp(command, "rm") == 0)
-            vremove(flags);
         else if(strcmp(command, "exit") == 0)
             break;
         else 

@@ -11,9 +11,9 @@
 
 int main()
 {
-    int op = open("test.vfs", O_RDWR);
-    printf("%d\n", op);
-    close(op);
+    module_init("test.vfs");
+    grap_parser();
+    module_exit();
     return 0;
     // struct inode_t inode;
     // dev_read(a, INODESIZE, &inode);
