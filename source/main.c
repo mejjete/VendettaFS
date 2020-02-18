@@ -1,7 +1,6 @@
 /*      Developed by Bastard
  * fix:         file mapping mechanism (repair size of superblock e.t)
  * fix:         inode/data bitmap mechanizm
- * rewrite:     dev_creat function
 */ 
 
 #include "../header/fs_funct.h"
@@ -11,8 +10,16 @@
 
 int main()
 {
+    remove("test.vfs");
     module_init("test.vfs");
-    grap_parser();
+    int a = dev_creat("clang", VFILE, 0);
+    int b = dev_creat("gcc.c", VFILE, 0);
+    int c = dev_creat("photo.jpeg", VFILE, 0);
+    int d = dev_creat("Programming", VDIR, 0);
+    int e = dev_creat("boss.txt", VFILE, 0);
+    printf("%d\n", c);
+    vremove("gcc.c");
+    info();
     module_exit();
     return 0;
 }

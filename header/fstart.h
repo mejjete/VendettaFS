@@ -64,10 +64,10 @@ struct inode_t
 	int16_t mode;		//can this file be read/written/executed
 	int16_t uid;		//who owns this file
 	int size;			//how many bytes are in the file
-	int time;			//what time was this file last accessed
-	int ctime;			//what time was this file created
-	int mtime;			//what time was this file last modified
-	int dtime;			//what time was this inode deleted
+	time_t time;		//what time was this file last accessed
+	time_t ctime;		//what time was this file created
+	time_t mtime;		//what time was this file last modified
+	time_t dtime;		//what time was this inode deleted
 	int16_t gid;		//which group does this file belong to
 	int16_t links_count;//how many hard longs are there to this file
 	int blocks;			//how many blocks have been allocated to this file
@@ -82,7 +82,7 @@ struct inode_t
 	int used_size;					//virtual cursor is offset relative to begining of current inode
 	int id;							//inode block pointer
 	int cursor;						//cursor in the file
-	char temp_trash[92];			//free space for meta_info
+	char temp_trash[68];			//free space for meta_info
 };
 
 struct super_block

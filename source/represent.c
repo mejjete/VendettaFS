@@ -140,7 +140,6 @@ bool module_exit()
     return true;
 }
 
-
 int dev_creat(const char *file_name, int type, int reqsize)
 {
     if(fd == 0 || file_name == NULL )
@@ -151,82 +150,50 @@ int dev_creat(const char *file_name, int type, int reqsize)
         return -1;
     }
  
-    int i, j;
+    int i = 2, j;
     struct inode_t inode;
     memset(&inode, 0, INODESIZE);
-    char *bitmap = (char *) malloc(80);
-
-    //find free inode block
-    dev_read(IBITMAP_START_TABLE, 80, bitmap);
-    for(i = 0; i < INODECOUNT; i++)
-    {
-        if(bitmap[i] == 0)
-        {
-            bitmap[i] = 1;
-            break;
-        }
-    }
-    dev_write(IBITMAP_START_TABLE + i, sizeof(char), &bitmap[i]);
     
+    inode.id = get_free_inode();
+    inode.type = type;
+    while(cdir.block[i] != 0)
+        i++;
+    cdir.block[i] = inode.id;
     if(type == VDIR)
     {
-        i = 2;
-        inode.type = VDIR;
-        inode.id = (INODE_START_TABLE + (INODESIZE * i));
-        inode.size = INODESIZE;
         if(strchr(file_name, '.'))
         {
             printf("vcreat: directory cannot have \".\" in the name");
             return -1;
         }
         strcpy(inode.name, file_name);
+        inode.size = INODESIZE;
         inode.block[0] = inode.id;
         inode.block[1] = cdir.id;
-        while(cdir.block[i] != 0)
-            i++;
-        cdir.block[i] = inode.id;
-        dev_write(cdir.id, INODESIZE, &cdir);
         dev_write(inode.id, INODESIZE, &inode);
+        dev_write(cdir.id, INODESIZE, &cdir);
         return inode.id;
     }
-
-    //find free data block
-    dev_read(DBITMAP_START_TABLE, 80, bitmap);
-    for(j = 0; j < 80; j++)
+    if(!strchr(file_name, '.'))
     {
-        if(bitmap[j] == 0)
-        {
-            bitmap[j] = 1;
-            break;
-        }
+        strcpy(inode.name, file_name);
+        strcpy(inode.name + strlen(inode.name), ".tmp");
     }
-    dev_write(DBITMAP_START_TABLE + j, sizeof(char), &bitmap[i]);
-
-    //set inode information
-    inode.id = (INODE_START_TABLE + (INODESIZE * i));
-    inode.size = BLOCKSIZE;
-    inode.used_size = 0;
-    inode.type = type;
-    inode.blocks = 1;
-    strcpy(inode.name, file_name);
-    inode.block[0] = get_free_block();
+    else 
+        strcpy(inode.name, file_name);
+    inode.block[0] = get_free_block();  
     inode.cursor = inode.block[0];
-
-    dev_write(IBITMAP_START_TABLE + j, sizeof(char), &bitmap[j]);
-    dev_write(INODE_START_TABLE + (INODESIZE * i), INODESIZE, &inode);
-
-    i = 2;
-    while(cdir.block[i] != 0)
-        i++;
-    cdir.block[i] = inode.id;
+    inode.used_size = 0;
+    inode.size = BLOCKSIZE;
+    dev_write(inode.id, INODESIZE, &inode);
     dev_write(cdir.id, INODESIZE, &cdir);
-    free(bitmap);
     return inode.id;
 }
 
+
 int vremove(const char *file_name)
 {
-    int i = 2, j = 0;
+    int i = 2, j = 0, k;
     struct inode_t inode;
     while(cdir.block[i] != 0)
     {
@@ -242,6 +209,12 @@ int vremove(const char *file_name)
                 inode.block[j] = 0;
                 j++;
             }
+            while(cdir.block[i + 1] != 0)
+            {
+                cdir.block[i] = cdir.block[i + 1];
+                i++;
+            }
+            cdir.block[i] = 0;
             int temp = inode.id;
             inode.used_size = 0;
             inode.size = 0;
