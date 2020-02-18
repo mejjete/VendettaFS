@@ -31,42 +31,42 @@ void info()
     */
 
     //inode info
-    // int inode_count = 2;
-    // struct inode_t inode[inode_count];
-    // dev_read(INODE_START_TABLE, INODESIZE * inode_count, inode);
-    // printf("\nLOG\n");
-    // for(int i = 0; i < inode_count; i++)
-    // {
-    //     printf("%d Inode\n", i + 1);
-    //     printf("\tInode id:             [%d]\n", inode[i].id);
-    //     printf("\tInode used size:      [%d]\n", inode[i].used_size);
-    //     printf("\tInode size:           [%d]\n", inode[i].size);
-    //     printf("\tInode name:           [%s]\n", inode[i].name);
-    //     if(inode[i].type == VFILE) 
-    //         printf("\tInode blocks:       ");
-    //     else 
-    //         printf("\tInode file blocks:  ");
-    //     for(int j = 0; j < 5; j++)
-    //         printf("  [%d] ", inode[i].block[j]);
-    //     printf("\n");
-    //     if(inode[i].type == VFILE)
-    //         printf("\tInode is file\n");
-    //     else if(inode[i].type == VDIR)
-    //         printf("\tInode is directory\n");
-    //     else 
-    //         printf("\tInode is something else\n");
-    // }
-    int i = 2;
-    printf("INODE TREE:\n");
-    struct inode_t root;
-    struct inode_t buf;
-    dev_read(INODE_START_TABLE, INODESIZE, &root);
-    while(root.block[i] != 0)
+    int inode_count = 5;
+    struct inode_t inode[inode_count];
+    dev_read(INODE_START_TABLE, INODESIZE * inode_count, inode);
+    printf("\nLOG\n");
+    for(int i = 0; i < inode_count; i++)
     {
-        dev_read(root.block[i], INODESIZE, &buf);
-        printf("\t%5d   %-6s   %2s   %2s   %s\n", buf.size, CHECKTYPE(buf.type), "data", "time", buf.name);
-        i++;
+        printf("%d Inode\n", i + 1);
+        printf("\tInode id:             [%d]\n", inode[i].id);
+        printf("\tInode used size:      [%d]\n", inode[i].used_size);
+        printf("\tInode size:           [%d]\n", inode[i].size);
+        printf("\tInode name:           [%s]\n", inode[i].name);
+        if(inode[i].type == VFILE) 
+            printf("\tInode blocks:       ");
+        else 
+            printf("\tInode file blocks:  ");
+        for(int j = 0; j < 5; j++)
+            printf("  [%d] ", inode[i].block[j]);
+        printf("\n");
+        if(inode[i].type == VFILE)
+            printf("\tInode is file\n");
+        else if(inode[i].type == VDIR)
+            printf("\tInode is directory\n");
+        else 
+            printf("\tInode is something else\n");
     }
+    // int i = 2;
+    // printf("INODE TREE:\n");
+    // struct inode_t root;
+    // struct inode_t buf;
+    // dev_read(INODE_START_TABLE, INODESIZE, &root);
+    // while(root.block[i] != 0)
+    // {
+    //     dev_read(root.block[i], INODESIZE, &buf);
+    //     printf("\t%5d   %-6s   %2s   %2s   %s\n", buf.size, CHECKTYPE(buf.type), "data", "time", buf.name);
+    //     i++;
+    // }
 }
 
 bool module_init(const char *path)
@@ -130,7 +130,7 @@ bool module_init(const char *path)
     cdir.block[0] = cdir.id;
     cdir.block[1] = 0;
     cdir.type = VDIR;
-    cdir.size = 0;
+    cdir.size = INODESIZE;
     strcpy(current_path, "root");
     dev_write(INODE_START_TABLE, INODESIZE, &cdir);
     free(temp);
@@ -212,17 +212,8 @@ int dev_creat(const char *file_name, int type, int reqsize)
     inode.type = type;
     inode.blocks = 1;
     strcpy(inode.name, file_name);
-
-    //set indirect block pointer
-    for(int db = 0; db < INDIRECT_BLOCK_POINTER; db++)
-    {
-        if(inode.block[db] == 0)
-        {
-            inode.block[db] = DATA_START_TABLE + (BLOCKSIZE * j);
-            inode.cursor = inode.block[db];
-            break;
-        }  
-    }
+    inode.block[0] = get_free_block();
+    inode.cursor = inode.block[0];
 
     dev_write(IBITMAP_START_TABLE + j, sizeof(char), &bitmap[j]);
     dev_write(INODE_START_TABLE + (INODESIZE * i), INODESIZE, &inode);
@@ -234,6 +225,38 @@ int dev_creat(const char *file_name, int type, int reqsize)
     dev_write(cdir.id, INODESIZE, &cdir);
     free(bitmap);
     return inode.id;
+}
+
+int vremove(const char *file_name)
+{
+    int i = 2, j = 0;
+    struct inode_t inode;
+    while(cdir.block[i] != 0)
+    {
+        dev_read(cdir.block[i], INODESIZE, &inode);
+        if(strcmp(inode.name, file_name) == 0)
+        {
+            cdir.block[i] = 0;
+            dev_write(cdir.id, INODESIZE, &cdir);
+            while(inode.block[j] != 0)
+            {
+                int index = (inode.block[j] - DATA_START_TABLE) / BLOCKSIZE;
+                dev_write(DBITMAP_START_TABLE + index, sizeof(char), 0);
+                inode.block[j] = 0;
+                j++;
+            }
+            int temp = inode.id;
+            inode.used_size = 0;
+            inode.size = 0;
+            inode.id = 0;
+            int index = (temp - INODE_START_TABLE) / BLOCKSIZE;
+            dev_write(IBITMAP_START_TABLE + index, sizeof(char), 0);
+            dev_write(temp, INODESIZE, &inode);
+            return 0;
+        }
+        i++;
+    }
+    return -1;
 }
 
 int dev_write(off_t fist_block, size_t size, void *data)

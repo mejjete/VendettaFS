@@ -15,5 +15,6 @@ int vread(int fd, void *buf, int count);
 int vwrite(int fd, void *buf, int count);
 int vseek(int fd, off_t offset, int whence);
 int vopen(const char *file_name);
+int vremove(const char *file_name);
 int change_dir(const char *dir_name);
 int look_dir();

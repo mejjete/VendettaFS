@@ -11,10 +11,9 @@
 
 int main()
 {
-    module_init("test.vfs");
-    dev_creat("Tfolder", VDIR, 0);
-    grap_parser();
-    module_exit();
+    int op = open("test.vfs", O_RDWR);
+    printf("%d\n", op);
+    close(op);
     return 0;
     // struct inode_t inode;
     // dev_read(a, INODESIZE, &inode);
