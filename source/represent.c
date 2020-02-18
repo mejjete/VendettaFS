@@ -4,17 +4,18 @@
 
 void info()
 {
-    printf("\nGeneral Info:\n");
-    printf("Super Block: [%ld] bytes\n", SUPERSIZE);
-    printf("Inode Block: [%ld] bytes\n", INODESIZE);
-    printf("*******************************\n");
-    struct super_block super;
-    vsync(&super);
-    printf("Super Block:\n");
-    printf("\tName: [%s]\n", super.fs_name);
-    printf("\tMagic Number: [%i]\n", super.magic_number);
-    printf("\tAll Space: [%ld]\n", super.all_space);
-
+    #ifdef NDEBUG
+        printf("\nGeneral Info:\n");
+        printf("Super Block: [%ld] bytes\n", SUPERSIZE);
+        printf("Inode Block: [%ld] bytes\n", INODESIZE);
+        printf("*******************************\n");
+        struct super_block super;
+        vsync(&super);
+        printf("Super Block:\n");
+        printf("\tName: [%s]\n", super.fs_name);
+        printf("\tMagic Number: [%i]\n", super.magic_number);
+        printf("\tAll Space: [%ld]\n", super.all_space);
+    #endif
     //bitmap info
     /*
     char *bmap = (char *) malloc(80);
@@ -63,7 +64,7 @@ void info()
     while(root.block[i] != 0)
     {
         dev_read(root.block[i], INODESIZE, &buf);
-        printf("\t%3d   %2s   %2s   %2s   %s\n", buf.size, CHECKTYPE(buf.type), "data", "time", buf.name);
+        printf("\t%5d   %-6s   %2s   %2s   %s\n", buf.size, CHECKTYPE(buf.type), "data", "time", buf.name);
         i++;
     }
 }
@@ -91,7 +92,7 @@ bool module_init(const char *path)
     //init super_block
     write(fd, &super, SUPERSIZE);
     write(fd, temp, META_BLOCKSIZE - SUPERSIZE);
-    printf("module: Super Block Initialized\n");    
+    // printf("module: Super Block Initialized\n");    
     
     //init inode bitmap block
     //availaible only 80 inode to indexing
@@ -99,7 +100,7 @@ bool module_init(const char *path)
     // write(fd, &ibitmap, sizeof(size_t));
     // write(fd, temp, META_BLOCKSIZE - sizeof(size_t));
     write(fd, temp, META_BLOCKSIZE);
-    printf("module: Inode Bitmap Initialized\n");
+    // printf("module: Inode Bitmap Initialized\n");
 
     //init data bitmap block
     //availaible only 80 data block to indexing
@@ -107,12 +108,12 @@ bool module_init(const char *path)
     // write(fd, &dbitmap, sizeof(size_t));
     // write(fd, temp, META_BLOCKSIZE - sizeof(size_t));
     write(fd, temp, META_BLOCKSIZE);
-    printf("module: Data Bitmap Initialized\n");
+    // printf("module: Data Bitmap Initialized\n");
 
     //init inode table
     for(int i = 0; i < 5; i++)
         write(fd, temp, META_BLOCKSIZE);
-    printf("module: Inode Blocks Initialized\n");
+    // printf("module: Inode Blocks Initialized\n");
 
     //init data block
     for(int i = 0; i < 80; i++)
@@ -120,8 +121,8 @@ bool module_init(const char *path)
 
     //meta info
     fstat(fd, &buf);
-    printf("module: File Size: [%ld]\n", buf.st_size);
-    printf("module: File System Initialized\n");
+    // printf("module: File Size: [%ld]\n", buf.st_size);
+    // printf("module: File System Initialized\n");
 
     //init root directory
     cdir.id = get_free_inode();
@@ -175,6 +176,7 @@ int dev_creat(const char *file_name, int type, int reqsize)
         i = 2;
         inode.type = VDIR;
         inode.id = (INODE_START_TABLE + (INODESIZE * i));
+        inode.size = INODESIZE;
         if(strchr(file_name, '.'))
         {
             printf("vcreat: directory cannot have \".\" in the name");
