@@ -30,7 +30,7 @@ void grap_parser()
             scanf("%s", flags);
             change_dir(flags);
         }
-        else if(strcmp(command, "rem") == 0)
+        else if(strcmp(command, "rm") == 0)
         {
             scanf("%s", flags);
             vremove(flags);

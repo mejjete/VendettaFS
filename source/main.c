@@ -15,19 +15,6 @@ int main()
     grap_parser();
     module_exit();
     return 0;
-    // struct inode_t inode;
-    // dev_read(a, INODESIZE, &inode);
-    // inode.block[0] = 32768;
-    // inode.block[1] = 33792;
-    // inode.block[2] = 34816;
-    // inode.block[3] = 35840;
-    // inode.block[4] = 36864;
-    // inode.block[5] = 37888;
-    // inode.block[6] = 38912;
-    // dev_write(a, INODESIZE, &inode);
-
-
-    return 0;
 }
 
 

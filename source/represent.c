@@ -56,17 +56,6 @@ void info()
         else 
             printf("\tInode is something else\n");
     }
-    // int i = 2;
-    // printf("INODE TREE:\n");
-    // struct inode_t root;
-    // struct inode_t buf;
-    // dev_read(INODE_START_TABLE, INODESIZE, &root);
-    // while(root.block[i] != 0)
-    // {
-    //     dev_read(root.block[i], INODESIZE, &buf);
-    //     printf("\t%5d   %-6s   %2s   %2s   %s\n", buf.size, CHECKTYPE(buf.type), "data", "time", buf.name);
-    //     i++;
-    // }
 }
 
 bool module_init(const char *path)

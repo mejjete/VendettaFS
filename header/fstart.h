@@ -64,7 +64,7 @@ struct inode_t
 	int16_t mode;		//can this file be read/written/executed
 	int16_t uid;		//who owns this file
 	int size;			//how many bytes are in the file
-	int time;			//what time was this file las acccessed
+	int time;			//what time was this file last accessed
 	int ctime;			//what time was this file created
 	int mtime;			//what time was this file last modified
 	int dtime;			//what time was this inode deleted
