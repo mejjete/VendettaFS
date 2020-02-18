@@ -5,6 +5,8 @@
 #define ANSI_COLOR_YELLOW "\x1b[33m"
 #define ANSI_COLOR_RESET "\x1b[0m"
 
+void prompt_help();
+
 void graph_parser()
 {
     char command[15];
@@ -46,6 +48,8 @@ void graph_parser()
             scanf("%s %s", flags, data);
             uwrite(flags, data);
         }
+        else if(strcmp(command, "/?") == 0)
+            prompt_help();
         else if(strcmp(command, "clear") == 0)
             system("clear");
         else if(strcmp(command, "exit") == 0)
@@ -54,4 +58,17 @@ void graph_parser()
             printf("no such command: %s\n", command);
         printf(ANSI_COLOR_YELLOW"%s>"ANSI_COLOR_RESET " ", current_path);
     }
+}
+
+void prompt_help()
+{
+    printf("clear               - clear working place\n");
+    printf("ls                  - look at the folder\n");
+    printf("cr    [file]        - creat a file\n");
+    printf("rm    [file]        - remove file or directory\n");
+    printf("cd    [name]        - change current directory\n");
+    printf("cat   [file]        - look in the file\n");
+    printf("wr    [file] [data] - write data into the file\n");
+    printf("mkdir [name]        - creat directory\n");
+    printf("exit\n");
 }
