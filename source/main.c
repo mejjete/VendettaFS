@@ -10,18 +10,7 @@
 
 int main()
 {
-    remove("test.vfs");
     module_init("test.vfs");
-    int a = dev_creat("clang", VFILE, 0);
-    int b = dev_creat("gcc.c", VFILE, 0);
-    int c = dev_creat("photo.jpeg", VFILE, 0);
-    int d = dev_creat("Programming", VDIR, 0);
-    vwrite(a, "hello guys", strlen("hello guys") + 1);
-    // int e = dev_creat("boss.txt", VFILE, 0);
-    // printf("%d\n", c);
-    // info();
-    // vremove("gcc.c");
-    info();
     graph_parser();
     module_exit();
     return 0;

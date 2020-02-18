@@ -69,8 +69,30 @@ int ucat(const char *file_name)
             char *tmp = (char *) malloc(inode.used_size + 1);
             vseek(inode.id, 0, VSEEK_SET);
             vread(inode.id, tmp, inode.used_size);
+            vseek(inode.id, 0, VSEEK_SET);
             write(0, tmp, inode.used_size);
             write(0, "\n", sizeof(char));
+            return 0;
+        }
+        i++;
+    }
+}
+
+int uwrite(const char *file_name, char *text)
+{
+    int i = 2;
+    struct inode_t inode;
+    while(cdir.block[i] != 0)
+    {
+        dev_read(cdir.block[i], INODESIZE, &inode);
+        if(inode.type == VDIR)
+        {
+            printf("undefined behaviour\n");
+            return -1;
+        }
+        if(strcmp(file_name, inode.name) == 0)
+        {
+            vwrite(inode.id, text, strlen(text));
             return 0;
         }
         i++;

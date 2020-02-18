@@ -40,6 +40,12 @@ void graph_parser()
             scanf("%s", flags);
             ucat(flags);
         }
+        else if(strcmp(command, "wr") == 0)
+        {
+            char *data = (char *) malloc(BLOCKSIZE);
+            scanf("%s %s", flags, data);
+            uwrite(flags, data);
+        }
         else if(strcmp(command, "clear") == 0)
             system("clear");
         else if(strcmp(command, "exit") == 0)
