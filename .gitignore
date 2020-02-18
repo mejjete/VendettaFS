@@ -2,5 +2,5 @@
 *.exe
 *.out
 source/main.c
-source/*.vfs
+*.vfs
 .vscode/
