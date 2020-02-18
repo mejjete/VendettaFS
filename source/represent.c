@@ -131,7 +131,7 @@ bool module_init(const char *path)
     cdir.block[1] = 0;
     cdir.type = VDIR;
     cdir.size = 0;
-
+    strcpy(current_path, "root");
     dev_write(INODE_START_TABLE, INODESIZE, &cdir);
     free(temp);
     return true;

@@ -12,13 +12,8 @@
 int main()
 {
     module_init("test.vfs");
-    dev_creat("clang.txt", VFILE, 0);
-    dev_creat("alex", VDIR, 0);
-    _change_dir("alex");
-    dev_creat("gcc.txt", VFILE, 0);
-    _look_dir();
-    _change_dir("..");
-    //info();
+    dev_creat("Tfolder", VDIR, 0);
+    grap_parser();
     module_exit();
     return 0;
     // struct inode_t inode;

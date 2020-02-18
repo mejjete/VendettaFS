@@ -2,7 +2,7 @@
 #include "../header/fs_funct.h"
 #include "../header/fs_interface.h"
 
-int _change_dir(const char *dir_name)
+int change_dir(const char *dir_name)
 {
     int i = 2;
     struct inode_t inode;
@@ -14,6 +14,8 @@ int _change_dir(const char *dir_name)
         if(cdir.block[1] == 0)
             return 0;
         dev_read(cdir.block[1], INODESIZE, &inode);
+        int lpos = strlen(current_path);
+        current_path[lpos - (strlen(cdir.name) + 1)] = '\0';
         memcpy(&cdir, &inode, INODESIZE);
         return 0;
     }
@@ -25,6 +27,8 @@ int _change_dir(const char *dir_name)
             cdir.block[1] = cdir.id;
             dev_write(cdir.id, INODESIZE, &cdir);
             memcpy(&cdir, &inode, INODESIZE);
+            strcpy(current_path + strlen(current_path), "/");
+            strcpy(current_path + strlen(current_path), dir_name);
             return 0;
         }
         i++;
@@ -33,7 +37,7 @@ int _change_dir(const char *dir_name)
     return 1;
 }
 
-int _look_dir()
+int look_dir()
 {
     int i = 2;
     struct inode_t buf;

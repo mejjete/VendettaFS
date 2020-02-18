@@ -3,6 +3,7 @@
 
 struct super_block gsuper;
 struct inode_t cdir;
+char current_path[50];
 int fd;
 
 int fs_create(const char *fsname);
@@ -14,5 +15,5 @@ int vread(int fd, void *buf, int count);
 int vwrite(int fd, void *buf, int count);
 int vseek(int fd, off_t offset, int whence);
 int vopen(const char *file_name);
-int _change_dir(const char *dir_name);
-int _look_dir();
+int change_dir(const char *dir_name);
+int look_dir();
