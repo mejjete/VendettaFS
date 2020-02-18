@@ -7,7 +7,7 @@ int dev_read(off_t first_block, size_t size, void *dest);
 int dev_write(off_t fist_block, size_t size, void *dest);
 int dev_creat(const char *path, int type, int reqsize);
 
-void grap_parser();
+void graph_parser();
 int move_cursor(struct inode_t *inode, int cdest);
 int get_free_block();
 int get_free_inode();

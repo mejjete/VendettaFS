@@ -51,3 +51,28 @@ int look_dir()
         printf("current directory is empty\n");
     return 0;
 }
+
+int ucat(const char *file_name)
+{
+    int i = 2;
+    struct inode_t inode;
+    while(cdir.block[i] != 0)
+    {
+        dev_read(cdir.block[i], INODESIZE, &inode);
+        if(inode.type == VDIR)
+        {
+            printf("undefined behaviour\n");
+            return -1;
+        }
+        if(strcmp(file_name, inode.name) == 0)
+        {
+            char *tmp = (char *) malloc(inode.used_size + 1);
+            vseek(inode.id, 0, VSEEK_SET);
+            vread(inode.id, tmp, inode.used_size);
+            write(0, tmp, inode.used_size);
+            write(0, "\n", sizeof(char));
+            return 0;
+        }
+        i++;
+    }
+}

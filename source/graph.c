@@ -5,7 +5,7 @@
 #define ANSI_COLOR_YELLOW "\x1b[33m"
 #define ANSI_COLOR_RESET "\x1b[0m"
 
-void grap_parser()
+void graph_parser()
 {
     char command[15];
     char flags[10];
@@ -34,6 +34,11 @@ void grap_parser()
         {
             scanf("%s", flags);
             vremove(flags);
+        }
+        else if(strcmp(command, "cat") == 0)
+        {
+            scanf("%s", flags);
+            ucat(flags);
         }
         else if(strcmp(command, "clear") == 0)
             system("clear");

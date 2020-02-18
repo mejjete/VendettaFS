@@ -18,3 +18,4 @@ int vopen(const char *file_name);
 int vremove(const char *file_name);
 int change_dir(const char *dir_name);
 int look_dir();
+int ucat(const char *file_name);

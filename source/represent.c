@@ -124,7 +124,7 @@ bool module_init(const char *path)
     cdir.id = get_free_inode();
     strcpy(cdir.name, "root");
     cdir.block[0] = cdir.id;
-    cdir.block[1] = 0;
+    cdir.block[1] = cdir.id;
     cdir.type = VDIR;
     cdir.size = INODESIZE;
     strcpy(current_path, "root");
@@ -190,7 +190,6 @@ int dev_creat(const char *file_name, int type, int reqsize)
     return inode.id;
 }
 
-
 int vremove(const char *file_name)
 {
     int i = 2, j = 0, k;
@@ -200,6 +199,14 @@ int vremove(const char *file_name)
         dev_read(cdir.block[i], INODESIZE, &inode);
         if(strcmp(inode.name, file_name) == 0)
         {
+            if(inode.type == VDIR)
+            {
+                if(inode.block[2] != 0)
+                {
+                    printf("directory must be empty\n");
+                    return -1;
+                }
+            }
             cdir.block[i] = 0;
             dev_write(cdir.id, INODESIZE, &cdir);
             while(inode.block[j] != 0)
@@ -209,12 +216,15 @@ int vremove(const char *file_name)
                 inode.block[j] = 0;
                 j++;
             }
+
+            //shift left indirect pointer
             while(cdir.block[i + 1] != 0)
             {
                 cdir.block[i] = cdir.block[i + 1];
                 i++;
             }
             cdir.block[i] = 0;
+            dev_write(cdir.id, INODESIZE, &cdir);
             int temp = inode.id;
             inode.used_size = 0;
             inode.size = 0;
