@@ -48,7 +48,7 @@ void graph_parser()
             scanf("%s %s", flags, data);
             uwrite(flags, data);
         }
-        else if(strcmp(command, "/?") == 0)
+        else if(strcmp(command, "/help") == 0)
             prompt_help();
         else if(strcmp(command, "clear") == 0)
             system("clear");

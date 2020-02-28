@@ -152,6 +152,17 @@ int dev_creat(const char *file_name, int type, int reqsize)
  
     int i = 2, j;
     struct inode_t inode;
+    //check if such file (file_name) already exist
+    while(cdir.block[i] != 0)
+    {
+        dev_read(cdir.block[i], INODESIZE, &inode);
+        if(strcmp(file_name, inode.name) == 0)
+        {
+            printf("vcreat: such file already exist: %s\n", file_name);
+            return -1;
+        }
+    }
+
     memset(&inode, 0, INODESIZE);
     
     inode.id = get_free_inode();
@@ -188,6 +199,33 @@ int dev_creat(const char *file_name, int type, int reqsize)
     dev_write(inode.id, INODESIZE, &inode);
     dev_write(cdir.id, INODESIZE, &cdir);
     return inode.id;
+}
+
+int vopen(const char *file_name, int16_t mode)
+{
+    int inodepos = INODE_START_TABLE;
+    struct inode_t *inode = (struct inode_t *) malloc(INODESIZE * 5);
+    dev_read(inodepos, INODESIZE * 5, inode);
+    for(int i = 0; i < 16; i++)
+    {
+        for(int j = 0; j < 5; j++)
+        {
+            if(strcmp(file_name, inode[j].name) == 0)
+            {
+                // if((inode[j].mode & mode) != mode)
+                //     return -1;
+                inode[j].cursor = inode[j].block[0];
+                dev_write(inode[j].id, INODESIZE, &inode[j]);
+                int temp_ind = inode[j].id;
+                free(inode);
+                return temp_ind;
+            }
+        }
+        inodepos += INODESIZE * 5;
+        dev_read(inodepos, INODESIZE * 5, inode);
+    }
+    printf("such file doesn't exist: %s\n", file_name);
+    return 0;
 }
 
 int vremove(const char *file_name)
