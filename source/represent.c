@@ -161,6 +161,7 @@ int dev_creat(const char *file_name, int type, int reqsize)
             printf("vcreat: such file already exist: %s\n", file_name);
             return -1;
         }
+        i++;
     }
 
     memset(&inode, 0, INODESIZE);
