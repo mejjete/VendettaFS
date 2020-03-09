@@ -46,9 +46,9 @@ int look_dir()
         dev_read(cdir.block[i], INODESIZE, &buf);
         printf("   %5d", buf.size);
         if(buf.type == VDIR)
-            printf("   %-5s   %5s   %5s   " VFS_DIRCOLOR"%s"ANSI_COLOR_RESET "\n", CHECKTYPE(buf.type), "data", "time", buf.name);
+            printf("    %-5s   %5s   %5s    " VFS_DIRCOLOR"%s"ANSI_COLOR_RESET "\n", CHECKTYPE(buf.type), "data", "time", buf.name);
         else 
-            printf("   %-5s   %5s   %5s   %s\n", CHECKTYPE(buf.type), "data", "time", buf.name);
+            printf("    %-5s   %5s   %5s    %s\n", CHECKTYPE(buf.type), "data", "time", buf.name);
         i++;
     }
     if(i == 2)
@@ -65,8 +65,8 @@ int ucat(const char *file_name)
         dev_read(cdir.block[i], INODESIZE, &inode);
         if(inode.type == VDIR)
         {
-            printf("undefined behaviour\n");
-            return -1;
+            i++;
+            continue;
         }
         if(strcmp(file_name, inode.name) == 0)
         {
@@ -80,6 +80,7 @@ int ucat(const char *file_name)
         }
         i++;
     }
+    printf("no such file: %s\n", file_name);
 }
 
 int uwrite(const char *file_name, char *text)
@@ -91,8 +92,8 @@ int uwrite(const char *file_name, char *text)
         dev_read(cdir.block[i], INODESIZE, &inode);
         if(inode.type == VDIR)
         {
-            printf("undefined behaviour\n");
-            return -1;
+            i++;
+            continue;
         }
         if(strcmp(file_name, inode.name) == 0)
         {
