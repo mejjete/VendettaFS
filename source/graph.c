@@ -2,9 +2,6 @@
 #include "../header/fs_funct.h"
 #include "../header/fs_interface.h"
 
-#define ANSI_COLOR_YELLOW "\x1b[33m"
-#define ANSI_COLOR_RESET "\x1b[0m"
-
 void prompt_help();
 
 void graph_parser()
@@ -12,7 +9,7 @@ void graph_parser()
     char command[15];
     char flags[10];
     memset(flags, 0, 15);    
-    printf(ANSI_COLOR_YELLOW"%s>"ANSI_COLOR_RESET " ", current_path);
+    printf(VFS_COLOR_DEF"%s>"ANSI_COLOR_RESET " ", current_path);
     while(scanf("%s", command))
     {
         if(strcmp(command, "ls") == 0)
@@ -56,7 +53,7 @@ void graph_parser()
             break;
         else 
             printf("no such command: %s\n", command);
-        printf(ANSI_COLOR_YELLOW"%s>"ANSI_COLOR_RESET " ", current_path);
+        printf(VFS_COLOR_DEF"%s>"ANSI_COLOR_RESET " ", current_path);
     }
 }
 

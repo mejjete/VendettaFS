@@ -44,7 +44,11 @@ int look_dir()
     while(cdir.block[i] != 0)
     {
         dev_read(cdir.block[i], INODESIZE, &buf);
-        printf("   %5d   %-5s   %2s   %2s   %s\n", buf.size, CHECKTYPE(buf.type), "data", "time", buf.name);
+        printf("   %5d", buf.size);
+        if(buf.type == VDIR)
+            printf("   %-5s   %5s   %5s   " VFS_DIRCOLOR"%s"ANSI_COLOR_RESET "\n", CHECKTYPE(buf.type), "data", "time", buf.name);
+        else 
+            printf("   %-5s   %5s   %5s   %s\n", CHECKTYPE(buf.type), "data", "time", buf.name);
         i++;
     }
     if(i == 2)

@@ -55,6 +55,12 @@ struct inode_t;
 #define CHECKTYPE(S)	S == VFILE ? "FILE" : "DIR "
 #define NDEBUG
 
+//color setting
+#define VFS_COLOR_DEF       "\x1b[1;32m"
+#define VFS_DIRCOLOR        "\x1b[1;36m"
+#define ANSI_COLOR_YELLOW   "\x1b[33m"
+#define ANSI_COLOR_RESET    "\x1b[0m"
+
 /* Inodes store information about files and directories */
 /* such as file ownership, access mode (read, write,	*/
 /* execute permissions), and file type					*/

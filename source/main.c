@@ -7,7 +7,6 @@
 #include "../header/fstart.h"
 #include "../header/fs_interface.h"
 
-
 int main()
 {
     module_init("test.vfs");
