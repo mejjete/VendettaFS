@@ -4,3 +4,4 @@
 source/main.c
 *.vfs
 .vscode/
+Debug/
