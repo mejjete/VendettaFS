@@ -11,8 +11,8 @@ void graph_parser();
 int move_cursor(struct inode_t *inode, int cdest);
 int get_free_block();
 int get_free_inode();
+void set_bitmap(off_t offset, char n);
 void bitmap(size_t n);
-static void set_bitmap(size_t *num, int pos);
 void bin(size_t n);
 void print_cur_time(struct inode_t *inode);
 

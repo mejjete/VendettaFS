@@ -73,7 +73,8 @@ int ucat(const char *file_name)
             char *tmp = (char *) malloc(inode.used_size + 1);
             vseek(inode.id, 0, VSEEK_SET);
             vread(inode.id, tmp, inode.used_size);
-            vseek(inode.id, 0, VSEEK_SET);
+            vseek(inode.id, inode.used_size, VSEEK_SET);
+            dev_write(inode.id, INODESIZE, &inode);
             write(0, tmp, inode.used_size);
             write(0, "\n", sizeof(char));
             return 0;

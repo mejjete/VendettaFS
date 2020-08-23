@@ -140,6 +140,7 @@ bool module_exit()
     return true;
 }
 
+//return file descriptor
 int dev_creat(const char *file_name, int type, int reqsize)
 {
     if(fd == 0 || file_name == NULL )
@@ -158,7 +159,7 @@ int dev_creat(const char *file_name, int type, int reqsize)
         dev_read(cdir.block[i], INODESIZE, &inode);
         if(strcmp(file_name, inode.name) == 0)
         {
-            printf("vcreat: such file already exist: %s\n", file_name);
+            printf("dev_creat: such file already exist: %s\n", file_name);
             return -1;
         }
         i++;
@@ -175,7 +176,7 @@ int dev_creat(const char *file_name, int type, int reqsize)
     {
         if(strchr(file_name, '.'))
         {
-            printf("vcreat: directory cannot have \".\" in the name");
+            printf("dev_creat: directory cannot have \".\" in the name");
             return -1;
         }
         strcpy(inode.name, file_name);
@@ -211,7 +212,7 @@ int vopen(const char *file_name, int16_t mode)
     {
         for(int j = 0; j < 5; j++)
         {
-            if(strcmp(file_name, inode[j].name) == 0)
+            if(strcmp(file_name, inode[j].name) == 0 && inode[j].type != VDIR)
             {
                 // if((inode[j].mode & mode) != mode)
                 //     return -1;
@@ -225,10 +226,11 @@ int vopen(const char *file_name, int16_t mode)
         inodepos += INODESIZE * 5;
         dev_read(inodepos, INODESIZE * 5, inode);
     }
-    printf("such file doesn't exist: %s\n", file_name);
-    return 0;
+    // printf("such file doesn't exist: %s\n", file_name);
+    return -1;
 }
 
+//remove file
 int vremove(const char *file_name)
 {
     int i = 2, j = 0, k;
@@ -238,6 +240,7 @@ int vremove(const char *file_name)
         dev_read(cdir.block[i], INODESIZE, &inode);
         if(strcmp(inode.name, file_name) == 0)
         {
+            //if file is a directory
             if(inode.type == VDIR)
             {
                 if(inode.block[2] != 0)
@@ -251,7 +254,7 @@ int vremove(const char *file_name)
             while(inode.block[j] != 0)
             {
                 int index = (inode.block[j] - DATA_START_TABLE) / BLOCKSIZE;
-                dev_write(DBITMAP_START_TABLE + index, sizeof(char), 0);
+                set_bitmap(DBITMAP_START_TABLE + index, 0);
                 inode.block[j] = 0;
                 j++;
             }
@@ -268,8 +271,9 @@ int vremove(const char *file_name)
             inode.used_size = 0;
             inode.size = 0;
             inode.id = 0;
-            int index = (temp - INODE_START_TABLE) / BLOCKSIZE;
-            dev_write(IBITMAP_START_TABLE + index, sizeof(char), 0);
+            *inode.name = '\0';
+            int index = (temp - INODE_START_TABLE) / INODESIZE;
+            set_bitmap(IBITMAP_START_TABLE + index, 0);
             dev_write(temp, INODESIZE, &inode);
             return 0;
         }
@@ -319,6 +323,13 @@ int vseek(int fd, off_t offset, int whence)
         return inode.cursor;
     else 
         return -1;
+}
+
+int dev_tell(int fd)
+{
+    struct inode_t inode;
+    dev_read(fd, INODESIZE, &inode);
+    return inode.cursor;
 }
 
 int vwrite(int fd, void *buf, int count)
@@ -490,6 +501,11 @@ int get_free_inode()
     }
     dev_write(IBITMAP_START_TABLE + i, sizeof(char), &imap[i]);
     return INODE_START_TABLE + (INODESIZE * i);
+}
+
+void set_bitmap(off_t offset, char n)
+{
+    dev_write(offset, sizeof(char), &n);
 }
 
 int move_cursor(struct inode_t *inode, int cdest)
