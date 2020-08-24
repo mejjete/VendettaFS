@@ -1,13 +1,13 @@
 #pragma once
 #include <sys/types.h>
-#include "fstart.h"
+#include <fstart.h>
 
 //device operation
 int dev_read(off_t first_block, size_t size, void *dest);
 int dev_write(off_t fist_block, size_t size, void *dest);
 int dev_creat(const char *path, int type, int reqsize);
 
-void graph_parser();
+void explorer();
 int move_cursor(struct inode_t *inode, int cdest);
 int get_free_block();
 int get_free_inode();
@@ -19,9 +19,5 @@ void print_cur_time(struct inode_t *inode);
 bool get_bitmap(size_t num, int p);
 void to_binary(size_t num);
 
-
 void bitmap_t(unsigned num);
 void set_bit_t(unsigned *num, int pos);
-
-//debug information 
-void info();

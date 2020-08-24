@@ -1,10 +1,11 @@
-#include "../header/fstart.h"
-#include "../header/fs_funct.h"
-#include "../header/fs_interface.h"
+#include <fstart.h>
+#include <fs_funct.h>
+#include <fs_interface.h>
+#include <internal_debug.h>
 
 void prompt_help();
 
-void graph_parser()
+void explorer()
 {
     char command[15];
     char flags[10];
@@ -51,6 +52,8 @@ void graph_parser()
             system("clear");
         else if(strcmp(command, "exit") == 0)
             break;
+        else if(strcmp(command, "info") == 0)
+            info();
         else 
             printf("no such command: %s\n", command);
         printf(VFS_COLOR_DEF"%s>"ANSI_COLOR_RESET " ", current_path);

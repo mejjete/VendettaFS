@@ -1,6 +1,6 @@
-#include "../header/fstart.h"
-#include "../header/fs_funct.h"
-#include "../header/fs_interface.h"
+#include <fstart.h>
+#include <fs_funct.h>
+#include <fs_interface.h>
 
 int change_dir(const char *dir_name)
 {

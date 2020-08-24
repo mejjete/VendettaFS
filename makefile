@@ -1,7 +1,10 @@
 CC=gcc
-CFLAGS=-I
+CFLAGS=-I/home/bastard/Home/VendettaFS/header
+DEPS=source/represent.c source/dirent.c source/explorer.c
+DEBUG=source/internal_debug.c
 
-main.o: source/main.c source/represent.c source/dirent.c source/graph.c
-	$(CC) -g source/main.c source/represent.c source/dirent.c source/graph.c
+output: source/main.c $(DEPS) $(DEBUG)
+	$(CC) -g $(CFLAGS) source/main.c $(DEPS) $(DEBUG)
+
 clean:
-	rm a.out test.vfs
+	rm a.out *.vfs

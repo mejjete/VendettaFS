@@ -2,62 +2,6 @@
 #include "../header/fs_funct.h"
 #include "../header/fs_interface.h"
 
-void info()
-{
-    #ifdef NDEBUG
-        printf("\nGeneral Info:\n");
-        printf("Super Block: [%ld] bytes\n", SUPERSIZE);
-        printf("Inode Block: [%ld] bytes\n", INODESIZE);
-        printf("*******************************\n");
-        struct super_block super;
-        vsync(&super);
-        printf("Super Block:\n");
-        printf("\tName: [%s]\n", super.fs_name);
-        printf("\tMagic Number: [%i]\n", super.magic_number);
-        printf("\tAll Space: [%ld]\n", super.all_space);
-    #endif
-    //bitmap info
-    /*
-    char *bmap = (char *) malloc(80);
-    dev_read(IBITMAP_START_TABLE, 80, bmap);
-    printf("Inode bitmap content:\n");
-    for(int i = 0; i < 80; i++)
-        printf("%c", bmap[i]);
-    
-    dev_read(DBITMAP_START_TABLE, 80, bmap);
-    printf("Data bitmap content:\n");
-    for(int i = 0; i < 80; i++)
-        putc(bmap[i], stdout);
-    */
-
-    //inode info
-    int inode_count = 5;
-    struct inode_t inode[inode_count];
-    dev_read(INODE_START_TABLE, INODESIZE * inode_count, inode);
-    printf("\nLOG\n");
-    for(int i = 0; i < inode_count; i++)
-    {
-        printf("%d Inode\n", i + 1);
-        printf("\tInode id:             [%d]\n", inode[i].id);
-        printf("\tInode used size:      [%d]\n", inode[i].used_size);
-        printf("\tInode size:           [%d]\n", inode[i].size);
-        printf("\tInode name:           [%s]\n", inode[i].name);
-        if(inode[i].type == VFILE) 
-            printf("\tInode blocks:       ");
-        else 
-            printf("\tInode file blocks:  ");
-        for(int j = 0; j < 5; j++)
-            printf("  [%d] ", inode[i].block[j]);
-        printf("\n");
-        if(inode[i].type == VFILE)
-            printf("\tInode is file\n");
-        else if(inode[i].type == VDIR)
-            printf("\tInode is directory\n");
-        else 
-            printf("\tInode is something else\n");
-    }
-}
-
 bool module_init(const char *path)
 {
     struct stat buf;
@@ -147,7 +91,7 @@ int dev_creat(const char *file_name, int type, int reqsize)
         return -1;
     if(strlen(file_name) > MAX_FILE_NAME)
     {
-        printf("vcreat: file name too lagre\n");
+        printf("dev_creat: file name too lagre\n");
         return -1;
     }
  
@@ -176,7 +120,7 @@ int dev_creat(const char *file_name, int type, int reqsize)
     {
         if(strchr(file_name, '.'))
         {
-            printf("dev_creat: directory cannot have \".\" in the name");
+            printf("dev_creat: directory cannot have \".\" in the name\n");
             return -1;
         }
         strcpy(inode.name, file_name);
@@ -196,6 +140,7 @@ int dev_creat(const char *file_name, int type, int reqsize)
         strcpy(inode.name, file_name);
     inode.block[0] = get_free_block();  
     inode.cursor = inode.block[0];
+    inode.parent = cdir.id;
     inode.used_size = 0;
     inode.size = BLOCKSIZE;
     dev_write(inode.id, INODESIZE, &inode);

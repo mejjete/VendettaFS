@@ -37,6 +37,7 @@ struct inode_t;
 #define INDIRECT_BLOCK_POINTER 15
 #define MAX_FILE_NAME 32
 #define MAX_DIR_NAME 16
+#define MAX_OPENED_FILE 32
 
 //FILE DEFINED MACROS
 #define FILE_DEFAULT_SIZE KBYTE
@@ -53,7 +54,6 @@ struct inode_t;
 #define VSEEK_CUR	0x115c
 
 #define CHECKTYPE(S)	S == VFILE ? "FILE" : "DIR "
-#define NDEBUG
 
 //color setting
 #define VFS_COLOR_DEF       "\x1b[1;32m"
@@ -61,21 +61,26 @@ struct inode_t;
 #define ANSI_COLOR_YELLOW   "\x1b[33m"
 #define ANSI_COLOR_RESET    "\x1b[0m"
 
+struct time_set
+{
+	time_t time;		//what time was this file last accessed
+	time_t ctime;		//what time was this file created
+	time_t mtime;		//what time was this file last modified
+	time_t dtime;		//what time was this inode deleted
+};
+
 /* Inodes store information about files and directories */
-/* such as file ownership, access mode (read, write,	*/
+/* such as: file ownership, access mode (read, write,	*/
 /* execute permissions), and file type					*/
 struct inode_t
 {
 	int type;			//type of file (regular file or directory)
 	int16_t mode;		//can this file be read/written/executed
 	int16_t uid;		//who owns this file
-	int size;			//how many bytes are in the file
-	time_t time;		//what time was this file last accessed
-	time_t ctime;		//what time was this file created
-	time_t mtime;		//what time was this file last modified
-	time_t dtime;		//what time was this inode deleted
 	int16_t gid;		//which group does this file belong to
 	int16_t links_count;//how many hard longs are there to this file
+	int size;			//how many bytes are in the file
+	struct time_set ttime;	//struct for time information
 	int blocks;			//how many blocks have been allocated to this file
 	int flags;			//how should vendetta fs use this inode
 	int osd1;			//an OS-dependent field
@@ -88,6 +93,7 @@ struct inode_t
 	int used_size;					//virtual cursor is offset relative to begining of current inode
 	int id;							//inode block pointer
 	int cursor;						//cursor in the file
+	int parent;						//parent folder
 	char temp_trash[68];			//free space for meta_info
 };
 
@@ -98,6 +104,19 @@ struct super_block
     int16_t magic_number;
     char fs_name[12];
 };
+
+// typedef struct FS
+// {
+// 	int file_descriptor;			//file descriptor in guest OS
+// 	char *file_sys_name;			//file system name in guest OS
+// 	struct super_block super;
+// 	char current_path[50];
+// 	struct inode_t cdir;
+// 	struct inode_t *op_inode[MAX_OPENED_FILE];
+// }file_system;
+
+// file_system *mount_file_system(const char *name);
+// int unmount_file_system(file_system *fs);
 
 //file API
 extern int my_open(const char *path);
