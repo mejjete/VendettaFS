@@ -13,6 +13,7 @@ int vcreat(const char *file_name);
 int vread(int fd, void *buf, int count);
 int vwrite(int fd, void *buf, int count);
 int vseek(int fd, off_t offset, int whence);
+int vtell(int fd);
 int dev_tell(int fd);
 int vopen(const char *file_name, int16_t mode);
 int vremove(const char *file_name);

@@ -270,6 +270,20 @@ int vseek(int fd, off_t offset, int whence)
         return -1;
 }
 
+//return position in file
+int vtell(int fd)
+{
+    int i = 0;
+    struct inode_t inode;
+    dev_read(fd, INODESIZE, &inode);
+    if(inode.type != VFILE)
+        return -1;
+    while(!(inode.cursor >= inode.block[i] && inode.cursor <= inode.block[i] + BLOCKSIZE))
+        i++;
+    int difference = inode.cursor - inode.block[i];
+    return (i * BLOCKSIZE) + difference;
+}
+
 int dev_tell(int fd)
 {
     struct inode_t inode;
