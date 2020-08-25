@@ -1,10 +1,14 @@
 #pragma once
 #include <fstart.h>
 
-struct super_block gsuper;
-struct inode_t cdir;
-char current_path[50];
-int fd;
+struct optional
+{
+    struct super_block gsuper;
+    struct inode_t cdir;
+    int fd;
+    int inode_table[MAX_OPENED_FILE];
+    char current_path[50];
+}fsys;
 
 int fs_create(const char *fsname);
 bool module_init(const char *path);

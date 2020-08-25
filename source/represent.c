@@ -4,13 +4,14 @@
 
 bool module_init(const char *path)
 {
+    int fd;
     struct stat buf;
     int offlag = O_RDWR;
     if(stat(path, &buf) == 0)
     {
         fd = open(path, O_RDWR);
-        dev_read(INODE_START_TABLE, INODESIZE, &cdir);
-        strcpy(current_path, cdir.name);
+        dev_read(INODE_START_TABLE, INODESIZE, &fsys.cdir);
+        strcpy(fsys.current_path, fsys.cdir.name);
         return true;
     }
     mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
@@ -65,28 +66,30 @@ bool module_init(const char *path)
     // printf("module: File System Initialized\n");
 
     //init root directory
-    cdir.id = get_free_inode();
-    strcpy(cdir.name, "root");
-    cdir.block[0] = cdir.id;
-    cdir.block[1] = cdir.id;
-    cdir.type = VDIR;
-    cdir.size = INODESIZE;
-    strcpy(current_path, "root");
-    dev_write(INODE_START_TABLE, INODESIZE, &cdir);
+    fsys.fd = fd;
+    fsys.cdir.id = get_free_inode();
+    strcpy(fsys.cdir.name, "root");
+    fsys.cdir.block[0] = fsys.cdir.id;
+    fsys.cdir.block[1] = fsys.cdir.id;
+    fsys.cdir.type = VDIR;
+    fsys.cdir.size = INODESIZE;
+    strcpy(fsys.current_path, "root");
+    dev_write(INODE_START_TABLE, INODESIZE, &fsys.cdir);
     free(temp);
     return true;
 }
 
 bool module_exit()
 {
-    dev_write(cdir.id, INODESIZE, &cdir);
-    close(fd);
+    dev_write(fsys.cdir.id, INODESIZE, &fsys.cdir);
+    close(fsys.fd);
     return true;
 }
 
 //return file descriptor
 int dev_creat(const char *file_name, int type, int reqsize)
 {
+    int fd = fsys.fd;
     if(fd == 0 || file_name == NULL )
         return -1;
     if(strlen(file_name) > MAX_FILE_NAME)
@@ -95,9 +98,9 @@ int dev_creat(const char *file_name, int type, int reqsize)
     int i = 2, j;
     struct inode_t inode;
     //check if such file (file_name) already exist
-    while(cdir.block[i] != 0)
+    while(fsys.cdir.block[i] != 0)
     {
-        dev_read(cdir.block[i], INODESIZE, &inode);
+        dev_read(fsys.cdir.block[i], INODESIZE, &inode);
         if(strcmp(file_name, inode.name) == 0)
             return -1;
         i++;
@@ -107,9 +110,9 @@ int dev_creat(const char *file_name, int type, int reqsize)
     
     inode.id = get_free_inode();
     inode.type = type;
-    while(cdir.block[i] != 0)
+    while(fsys.cdir.block[i] != 0)
         i++;
-    cdir.block[i] = inode.id;
+    fsys.cdir.block[i] = inode.id;
     if(type == VDIR)
     {
         if(strchr(file_name, '.'))
@@ -117,9 +120,9 @@ int dev_creat(const char *file_name, int type, int reqsize)
         strcpy(inode.name, file_name);
         inode.size = INODESIZE;
         inode.block[0] = inode.id;
-        inode.block[1] = cdir.id;
+        inode.block[1] = fsys.cdir.id;
         dev_write(inode.id, INODESIZE, &inode);
-        dev_write(cdir.id, INODESIZE, &cdir);
+        dev_write(fsys.cdir.id, INODESIZE, &fsys.cdir);
         return inode.id;
     }
     if(!strchr(file_name, '.'))
@@ -131,11 +134,11 @@ int dev_creat(const char *file_name, int type, int reqsize)
         strcpy(inode.name, file_name);
     inode.block[0] = get_free_block();  
     inode.cursor = inode.block[0];
-    inode.parent = cdir.id;
+    inode.parent = fsys.cdir.id;
     inode.used_size = 0;
     inode.size = BLOCKSIZE;
     dev_write(inode.id, INODESIZE, &inode);
-    dev_write(cdir.id, INODESIZE, &cdir);
+    dev_write(fsys.cdir.id, INODESIZE, &fsys.cdir);
     return inode.id;
 }
 
@@ -162,7 +165,6 @@ int vopen(const char *file_name, int16_t mode)
         inodepos += INODESIZE * 5;
         dev_read(inodepos, INODESIZE * 5, inode);
     }
-    // printf("such file doesn't exist: %s\n", file_name);
     return -1;
 }
 
@@ -171,9 +173,9 @@ int vremove(const char *file_name)
 {
     int i = 2, j = 0, k;
     struct inode_t inode;
-    while(cdir.block[i] != 0)
+    while(fsys.cdir.block[i] != 0)
     {
-        dev_read(cdir.block[i], INODESIZE, &inode);
+        dev_read(fsys.cdir.block[i], INODESIZE, &inode);
         if(strcmp(inode.name, file_name) == 0)
         {
             //if file is a directory
@@ -182,8 +184,8 @@ int vremove(const char *file_name)
                 if(inode.block[2] != 0)
                     return -1;
             }
-            cdir.block[i] = 0;
-            dev_write(cdir.id, INODESIZE, &cdir);
+            fsys.cdir.block[i] = 0;
+            dev_write(fsys.cdir.id, INODESIZE, &fsys.cdir);
             while(inode.block[j] != 0)
             {
                 int index = (inode.block[j] - DATA_START_TABLE) / BLOCKSIZE;
@@ -193,13 +195,13 @@ int vremove(const char *file_name)
             }
 
             //shift left indirect pointer
-            while(cdir.block[i + 1] != 0)
+            while(fsys.cdir.block[i + 1] != 0)
             {
-                cdir.block[i] = cdir.block[i + 1];
+                fsys.cdir.block[i] = fsys.cdir.block[i + 1];
                 i++;
             }
-            cdir.block[i] = 0;
-            dev_write(cdir.id, INODESIZE, &cdir);
+            fsys.cdir.block[i] = 0;
+            dev_write(fsys.cdir.id, INODESIZE, &fsys.cdir);
             int temp = inode.id;
             inode.used_size = 0;
             inode.size = 0;
@@ -217,6 +219,7 @@ int vremove(const char *file_name)
 
 int dev_write(off_t fist_block, size_t size, void *data)
 {
+    int fd = fsys.fd;
     lseek(fd, fist_block, SEEK_SET);
     write(fd, data, size);
     return 0;
@@ -224,6 +227,7 @@ int dev_write(off_t fist_block, size_t size, void *data)
 
 int dev_read(off_t first_block, size_t size, void *dest)
 {
+    int fd = fsys.fd;
     lseek(fd, first_block, SEEK_SET);
     read(fd, dest, size);
     return 0;
@@ -272,6 +276,7 @@ int vtell(int fd)
     return (i * BLOCKSIZE) + difference;
 }
 
+//return pure cursor
 int dev_tell(int fd)
 {
     struct inode_t inode;
@@ -326,13 +331,11 @@ int vwrite(int fd, void *buf, int count)
                     inode.used_size += BLOCKSIZE;
                     wd += BLOCKSIZE;
                     newr -= BLOCKSIZE;
-                    // printf("writted: [%d]\tntw: [%d]\n", wd, newr);
                     j++;
                 }
             }
             else 
             {
-                // printf("Writting WITHOUT stepping\n");
                 dev_write(inode.cursor, count, buf);
                 move_cursor(&inode, count);
                 inode.used_size += count;
@@ -348,7 +351,7 @@ int vwrite(int fd, void *buf, int count)
 int vread(int fd, void *buf, int count)
 {
     int i = 0, j = 0;;
-    //newr - neew to write, wd - writted
+    //newr - need to write, wd - writted
     int newr = count, wd = 0;
     struct inode_t inode;
     dev_read(fd, INODESIZE, &inode);
@@ -364,7 +367,6 @@ int vread(int fd, void *buf, int count)
             int toend = (inode.block[i] + BLOCKSIZE) - inode.cursor;
             if(toend < count)
             {
-                // printf("Reading WITH stepping\n");
                 j = i + 1;
                 dev_read(inode.cursor, toend, buf + wd);
                 move_cursor(&inode, toend);
@@ -381,7 +383,6 @@ int vread(int fd, void *buf, int count)
                     {
                         dev_write(inode.block[j], newr, buf + wd);
                         move_cursor(&inode, newr);
-                        // printf("Last Cursor: [%d]\n", inode.cursor);
                         dev_write(fd, INODESIZE, &inode);
                         return 0;
                     }
@@ -389,13 +390,11 @@ int vread(int fd, void *buf, int count)
                     move_cursor(&inode, BLOCKSIZE);
                     wd += BLOCKSIZE;
                     newr -= BLOCKSIZE;
-                    // printf("readed: [%d]\tntw: [%d]\n", wd, newr);
                     j++;
                 }
             }
             else 
             {
-                // printf("Reading WITHOUT stepping\n");
                 dev_read(inode.cursor, count, buf);
                 move_cursor(&inode, count);
                 dev_write(fd, INODESIZE, &inode);

@@ -10,11 +10,11 @@ void explorer()
     char command[15];
     char flags[10];
     memset(flags, 0, 15);    
-    printf(VFS_COLOR_DEF"%s>"ANSI_COLOR_RESET " ", current_path);
+    printf(VFS_COLOR_DEF"%s>"ANSI_COLOR_RESET " ", fsys.current_path);
     while(scanf("%s", command))
     {
         if(strcmp(command, "ls") == 0)
-            look_dir(cdir.name);
+            look_dir(fsys.cdir.name);
         else if(strcmp(command, "cr") == 0)
         {            
             scanf("%s", flags);
@@ -58,7 +58,7 @@ void explorer()
             show_inode_bitmap();
         else 
             printf("no such command: %s\n", command);
-        printf(VFS_COLOR_DEF"%s>"ANSI_COLOR_RESET " ", current_path);
+        printf(VFS_COLOR_DEF"%s>"ANSI_COLOR_RESET " ", fsys.current_path);
     }
 }
 

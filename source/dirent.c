@@ -11,24 +11,24 @@ int change_dir(const char *dir_name)
         return 0;
     if(strcmp(dir_name, "..") == 0)
     {
-        if(cdir.block[1] == 0)
+        if(fsys.cdir.block[1] == 0)
             return 0;
-        dev_read(cdir.block[1], INODESIZE, &inode);
-        int lpos = strlen(current_path);
-        current_path[lpos - (strlen(cdir.name) + 1)] = '\0';
-        memcpy(&cdir, &inode, INODESIZE);
+        dev_read(fsys.cdir.block[1], INODESIZE, &inode);
+        int lpos = strlen(fsys.current_path);
+        fsys.current_path[lpos - (strlen(fsys.cdir.name) + 1)] = '\0';
+        memcpy(&fsys.cdir, &inode, INODESIZE);
         return 0;
     }
-    while(cdir.block[i] != 0)
+    while(fsys.cdir.block[i] != 0)
     {
-        dev_read(cdir.block[i], INODESIZE, &inode);
+        dev_read(fsys.cdir.block[i], INODESIZE, &inode);
         if(strcmp(dir_name, inode.name) == 0 && inode.type == VDIR)
         {
-            cdir.block[1] = cdir.id;
-            dev_write(cdir.id, INODESIZE, &cdir);
-            memcpy(&cdir, &inode, INODESIZE);
-            strcpy(current_path + strlen(current_path), "/");
-            strcpy(current_path + strlen(current_path), dir_name);
+            fsys.cdir.block[1] = fsys.cdir.id;
+            dev_write(fsys.cdir.id, INODESIZE, &fsys.cdir);
+            memcpy(&fsys.cdir, &inode, INODESIZE);
+            strcpy(fsys.current_path + strlen(fsys.current_path), "/");
+            strcpy(fsys.current_path + strlen(fsys.current_path), dir_name);
             return 0;
         }
         i++;
@@ -41,9 +41,9 @@ int look_dir()
 {
     int i = 2;
     struct inode_t buf;
-    while(cdir.block[i] != 0)
+    while(fsys.cdir.block[i] != 0)
     {
-        dev_read(cdir.block[i], INODESIZE, &buf);
+        dev_read(fsys.cdir.block[i], INODESIZE, &buf);
         printf("   %5d", buf.size);
         if(buf.type == VDIR)
             printf("    %-5s   %5s   %5s    " VFS_DIRCOLOR"%s"ANSI_COLOR_RESET "\n", CHECKTYPE(buf.type), "data", "time", buf.name);
@@ -60,9 +60,9 @@ int ucat(const char *file_name)
 {
     int i = 2;
     struct inode_t inode;
-    while(cdir.block[i] != 0)
+    while(fsys.cdir.block[i] != 0)
     {
-        dev_read(cdir.block[i], INODESIZE, &inode);
+        dev_read(fsys.cdir.block[i], INODESIZE, &inode);
         if(inode.type == VDIR)
         {
             i++;
@@ -88,9 +88,9 @@ int uwrite(const char *file_name, char *text)
 {
     int i = 2;
     struct inode_t inode;
-    while(cdir.block[i] != 0)
+    while(fsys.cdir.block[i] != 0)
     {
-        dev_read(cdir.block[i], INODESIZE, &inode);
+        dev_read(fsys.cdir.block[i], INODESIZE, &inode);
         if(inode.type == VDIR)
         {
             i++;
