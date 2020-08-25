@@ -56,6 +56,8 @@ void explorer()
             info();
         else if(strcmp(command, "bitmap") == 0)
             show_inode_bitmap();
+        else if(strcmp(command, "itable") == 0)
+            show_inode_table();
         else 
             printf("no such command: %s\n", command);
         printf(VFS_COLOR_DEF"%s>"ANSI_COLOR_RESET " ", fsys.current_path);

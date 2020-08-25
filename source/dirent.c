@@ -25,7 +25,7 @@ int change_dir(const char *dir_name)
         if(strcmp(dir_name, inode.name) == 0 && inode.type == VDIR)
         {
             fsys.cdir.block[1] = fsys.cdir.id;
-            dev_write(fsys.cdir.id, INODESIZE, &fsys.cdir);
+            // dev_write(fsys.cdir.id, INODESIZE, &fsys.cdir);
             memcpy(&fsys.cdir, &inode, INODESIZE);
             strcpy(fsys.current_path + strlen(fsys.current_path), "/");
             strcpy(fsys.current_path + strlen(fsys.current_path), dir_name);

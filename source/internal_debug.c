@@ -49,12 +49,14 @@ void info()
 
 void node_struct(struct inode_t *inode)
 {
-	printf("---------------------------------------\n");
+	printf("----------INODE INFO----------\n");
 	printf("Adress: %d\n", inode->id);
+    printf("Name: %s\n", inode->name);
     printf("Parent: %d\n", inode->parent);
 	printf("Cursor: %d\n", inode->cursor);
 	printf("Used size: %d\n", inode->used_size);
 	printf("General size: %d\n", inode->size);
+    printf("------------------------------\n");
 }
 
 void show_inode_bitmap()
@@ -78,4 +80,19 @@ void show_inode_bitmap()
 static inline void fs_sync(struct super_block *super)
 {
     dev_read(0, SUPERSIZE, super);
+}
+
+void show_inode_table()
+{
+    int count = 0;
+    for(int i = 0; i < MAX_OPENED_FILE; i++)
+    {
+        if(fsys.inode_table[i] != NULL)
+        {
+            node_struct(fsys.inode_table[i]);
+            count++;
+        }
+    }
+    if(count == 0)
+        printf("Inode table is empty\n");
 }

@@ -10,6 +10,7 @@ bool module_init(const char *path)
     if(stat(path, &buf) == 0)
     {
         fd = open(path, O_RDWR);
+        fsys.fd = fd;
         dev_read(INODE_START_TABLE, INODESIZE, &fsys.cdir);
         strcpy(fsys.current_path, fsys.cdir.name);
         return true;
@@ -65,6 +66,10 @@ bool module_init(const char *path)
     // printf("module: File Size: [%ld]\n", buf.st_size);
     // printf("module: File System Initialized\n");
 
+    //init inode table
+    for(int i = 0; i < 32; i++)
+        fsys.inode_table[i] = NULL;
+
     //init root directory
     fsys.fd = fd;
     fsys.cdir.id = get_free_inode();
@@ -76,12 +81,14 @@ bool module_init(const char *path)
     strcpy(fsys.current_path, "root");
     dev_write(INODE_START_TABLE, INODESIZE, &fsys.cdir);
     free(temp);
+    node_struct(&fsys.cdir);
     return true;
 }
 
 bool module_exit()
 {
     dev_write(fsys.cdir.id, INODESIZE, &fsys.cdir);
+    synchonize_inode_table();
     close(fsys.fd);
     return true;
 }
@@ -121,8 +128,9 @@ int dev_creat(const char *file_name, int type, int reqsize)
         inode.size = INODESIZE;
         inode.block[0] = inode.id;
         inode.block[1] = fsys.cdir.id;
-        dev_write(inode.id, INODESIZE, &inode);
-        dev_write(fsys.cdir.id, INODESIZE, &fsys.cdir);
+        add_to_inode_table(&inode);
+        // dev_write(inode.id, INODESIZE, &inode);
+        // dev_write(fsys.cdir.id, INODESIZE, &fsys.cdir);
         return inode.id;
     }
     if(!strchr(file_name, '.'))
@@ -137,8 +145,9 @@ int dev_creat(const char *file_name, int type, int reqsize)
     inode.parent = fsys.cdir.id;
     inode.used_size = 0;
     inode.size = BLOCKSIZE;
-    dev_write(inode.id, INODESIZE, &inode);
-    dev_write(fsys.cdir.id, INODESIZE, &fsys.cdir);
+    add_to_inode_table(&inode);
+    // dev_write(inode.id, INODESIZE, &inode);
+    // dev_write(fsys.cdir.id, INODESIZE, &fsys.cdir);
     return inode.id;
 }
 
@@ -155,8 +164,14 @@ int vopen(const char *file_name, int16_t mode)
             {
                 // if((inode[j].mode & mode) != mode)
                 //     return -1;
+                struct inode_t *f = find_inode(inode[j].id);
+                if(f != NULL)
+                {
+                    printf("file has been already opened\n");
+                    return inode[j].id;
+                }
                 inode[j].cursor = inode[j].block[0];
-                dev_write(inode[j].id, INODESIZE, &inode[j]);
+                // dev_write(inode[j].id, INODESIZE, &inode[j]);
                 int temp_ind = inode[j].id;
                 free(inode);
                 return temp_ind;
@@ -216,6 +231,13 @@ int vremove(const char *file_name)
     }
     return -1;
 }
+
+int dev_remove(int fd)
+{
+    struct inode_t *inode = find_inode(fd);
+    if(inode == NULL)
+        return -1;
+};
 
 int dev_write(off_t fist_block, size_t size, void *data)
 {
@@ -440,6 +462,23 @@ int get_free_inode()
     }
     dev_write(IBITMAP_START_TABLE + i, sizeof(char), &imap[i]);
     return INODE_START_TABLE + (INODESIZE * i);
+}
+
+int vclose(int fd)
+{
+    for(int i = 0; i <= MAX_OPENED_FILE; i++)
+    {
+        if(fsys.inode_table[i] == NULL)
+            continue;
+        if(fsys.inode_table[i]->id == fd)
+        {
+            dev_write(fd, INODESIZE, fsys.inode_table[i]);
+            free(fsys.inode_table[i]);
+            fsys.inode_table[i] == NULL;
+            return 0;
+        }
+    }
+    return -1;
 }
 
 void set_bitmap(off_t offset, char n)

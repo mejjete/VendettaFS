@@ -6,7 +6,7 @@ struct optional
     struct super_block gsuper;
     struct inode_t cdir;
     int fd;
-    int inode_table[MAX_OPENED_FILE];
+    struct inode_t *inode_table[MAX_OPENED_FILE];
     char current_path[50];
 }fsys;
 

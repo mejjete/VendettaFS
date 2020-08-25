@@ -38,7 +38,10 @@ void set_file_bitmap(int fd, int count)
 int main()
 {
     module_init("test.vfs");
-    explorer();
+    dev_creat("alex.txt", VFILE, 0);
+    // explorer();
+    synchonize_inode_table();
+    info();
     module_exit();   
     return 0;
 }

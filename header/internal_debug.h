@@ -15,4 +15,7 @@ void show_inode_bitmap();
 //synhronize super block with struct
 static inline void fs_sync(struct super_block *super);
 
+//show inode table
+void show_inode_table();
+
 #endif

@@ -7,6 +7,26 @@ int dev_read(off_t first_block, size_t size, void *dest);
 int dev_write(off_t fist_block, size_t size, void *dest);
 int dev_creat(const char *path, int type, int reqsize);
 
+/*      inode table operation       */
+/* 
+ * find the inode in table by given file descriptor
+ * if succes returns pointer to inode, otherwise - NULL
+*/
+struct inode_t *find_inode(int fd);
+
+/*
+ * add inode to inode table
+ * there's nothing to return
+*/
+void add_to_inode_table(struct inode_t *inode);
+
+/*
+ *
+ * synchonization file inode with persistent
+ * nothing to return
+*/
+void synchonize_inode_table();
+
 void explorer();
 int move_cursor(struct inode_t *inode, int cdest);
 int get_free_block();
