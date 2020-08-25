@@ -54,6 +54,8 @@ void explorer()
             break;
         else if(strcmp(command, "info") == 0)
             info();
+        else if(strcmp(command, "bitmap") == 0)
+            show_inode_bitmap();
         else 
             printf("no such command: %s\n", command);
         printf(VFS_COLOR_DEF"%s>"ANSI_COLOR_RESET " ", current_path);

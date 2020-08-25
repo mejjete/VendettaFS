@@ -6,7 +6,6 @@
  * 
  * test:        vseek function
  * 
- * dev:         dev_tell for user-like output
 */ 
 
 #include <fstart.h>
@@ -24,10 +23,30 @@ int flex_open(const char *string)
     return desc;
 }
 
-int main()
+void set_file_bitmap(int fd, int count)
 {
+    struct inode_t inode;
+    dev_read(fd, INODESIZE, &inode);
+    int j = 0;
+    while(inode.block[j] != 0)
+        j++;
+    for(int i = 0; i < count; i++)
+        inode.block[j++] = get_free_block();
+    dev_write(fd, INODESIZE, &inode);
+}
+
+int main()
+{   
     module_init("test.vfs");
-    explorer();
+    int file = flex_open("alex.txt");
+    int file2 = flex_open("trush.txt");
+    set_file_bitmap(file, 4);
+    void *test_data = malloc(KBYTE * 4);
+    printf("Pre-position:\n\tdev_tell: %d\n\tvtell: %d\n", dev_tell(file), vtell(file));
+    vwrite(file, test_data, 1500);
+    vwrite(file, test_data, 1500);
+    printf("Post position:\n\tdev_tell: %d\n\tvtell: %d\n", dev_tell(file), vtell(file));
+    // explorer();
     module_exit();
     return 0;
 }

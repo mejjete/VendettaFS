@@ -1,6 +1,6 @@
-#include "../header/fstart.h"
-#include "../header/fs_funct.h"
-#include "../header/fs_interface.h"
+#include <fstart.h>
+#include <fs_funct.h>
+#include <fs_interface.h>
 
 bool module_init(const char *path)
 {
@@ -90,11 +90,8 @@ int dev_creat(const char *file_name, int type, int reqsize)
     if(fd == 0 || file_name == NULL )
         return -1;
     if(strlen(file_name) > MAX_FILE_NAME)
-    {
-        printf("dev_creat: file name too lagre\n");
         return -1;
-    }
- 
+
     int i = 2, j;
     struct inode_t inode;
     //check if such file (file_name) already exist
@@ -102,10 +99,7 @@ int dev_creat(const char *file_name, int type, int reqsize)
     {
         dev_read(cdir.block[i], INODESIZE, &inode);
         if(strcmp(file_name, inode.name) == 0)
-        {
-            printf("dev_creat: such file already exist: %s\n", file_name);
             return -1;
-        }
         i++;
     }
 
@@ -119,10 +113,7 @@ int dev_creat(const char *file_name, int type, int reqsize)
     if(type == VDIR)
     {
         if(strchr(file_name, '.'))
-        {
-            printf("dev_creat: directory cannot have \".\" in the name\n");
             return -1;
-        }
         strcpy(inode.name, file_name);
         inode.size = INODESIZE;
         inode.block[0] = inode.id;
@@ -189,10 +180,7 @@ int vremove(const char *file_name)
             if(inode.type == VDIR)
             {
                 if(inode.block[2] != 0)
-                {
-                    printf("directory must be empty\n");
                     return -1;
-                }
             }
             cdir.block[i] = 0;
             dev_write(cdir.id, INODESIZE, &cdir);
@@ -299,10 +287,7 @@ int vwrite(int fd, void *buf, int count)
     struct inode_t inode;
     dev_read(fd, INODESIZE, &inode);
     if(inode.type == VDIR)
-    {
-        printf("write: cannot write into a directory\n");
-        exit(EXIT_FAILURE);
-    }
+        return -1;
     while(inode.block[i] != 0)
     {
         if(inode.cursor >= inode.block[i] && inode.cursor <= inode.block[i] + BLOCKSIZE)
@@ -368,11 +353,7 @@ int vread(int fd, void *buf, int count)
     struct inode_t inode;
     dev_read(fd, INODESIZE, &inode);
     if(inode.type == VDIR)
-    {
-        printf("read: cannot read from a directory\n");
-        exit(EXIT_FAILURE);
-    }
-
+        return -1;
     if(count == 0)
         return 0;
     
