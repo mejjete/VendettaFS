@@ -10,12 +10,12 @@ void info()
         printf("Super Block: [%ld] bytes\n", SUPERSIZE);
         printf("Inode Block: [%ld] bytes\n", INODESIZE);
         printf("*******************************\n");
-        struct super_block super;
-        fs_sync(&super);
+        struct super_block super = _vfs_super_block;
         printf("Super Block:\n");
         printf("\tName: [%s]\n", super.fs_name);
         printf("\tMagic Number: [%i]\n", super.magic_number);
-        printf("\tAll Space: [%ld]\n", super.all_space);
+        printf("\tFree inode blocks: [%d]\n", super.free_inode_blocks);
+        printf("\tFree datas blocks: [%d]\n", super.free_data_blocks);
     #endif
 
     //inode info
@@ -57,23 +57,30 @@ void node_struct(struct inode_t *inode)
 	printf("General size: %d\n", inode->size);
 }
 
-void show_inode_bitmap()
-{
-    printf("---INODE BITMAP--- ---DATA BITMAP---\n");
-    char ibitmap[80], dbitmap[80];
-    dev_read(IBITMAP_START_TABLE, 80, &ibitmap);
-    dev_read(DBITMAP_START_TABLE, 80, &dbitmap);
-    for(int c = 0; c < 4; c++)
-    {
-        for(int i = 0; i < 5; i++)
-            printf("%3d", ibitmap[(c * 5) + i]);
-        printf("  |");
-        for(int j = 0; j < 5; j++)
-            printf("%3d", dbitmap[(c * 5) + j]);
-        printf("  |\n");
-    }
-    printf("------------------ -----------------\n");
-}
+// void show_inode_bitmap()
+// {
+//     printf("---INODE BITMAP--- ---DATA BITMAP---\n");
+//     // char ibitmap[80], dbitmap[80];
+//     // dev_read(IBITMAP_START_TABLE, 80, &ibitmap);
+//     // dev_read(DBITMAP_START_TABLE, 80, &dbitmap);
+//     uint8_t *Ibitmap = _vfs_super_block.__Inode_bitmask_table.bitmask;
+//     uint8_t *Dbitmap = _vfs_super_block.__Data_bitmask_table.bitmask;
+
+//     for(int i = 0; i < META_BLOCKSIZE / BITSIZE; i++)
+//     {  
+//         for(int j = 0; j < BITSIZE; j++)
+//         {
+//             uint8_t *num = &mask.bitmask[i];
+//             if(!(*num & (1 << j)))
+//             {
+//                 // printf("%d inode is free\n", i * 8 + j);
+//                 *num |= 1 << j;
+//                 return INODE_START_TABLE + (INODESIZE * (i * 8 + j));
+//             }
+//         }
+//     }
+//     printf("------------------ -----------------\n");
+// }
 
 static inline void fs_sync(struct super_block *super)
 {

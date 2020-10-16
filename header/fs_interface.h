@@ -1,13 +1,13 @@
 #pragma once
 #include <fstart.h>
 
-struct super_block gsuper;
+struct super_block _vfs_super_block;
 struct inode_t cdir;
 char current_path[50];
 int fd;
 
 int fs_create(const char *fsname);
-bool module_init(const char *path);
+bool module_init(const char *path, size_t cluster_size);
 bool module_exit();
 int vcreat(const char *file_name);
 int vread(int fd, void *buf, int count);

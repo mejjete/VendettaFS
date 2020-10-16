@@ -10,10 +10,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <time.h>
+#include <bitmask.h>
 
 typedef unsigned char uchar;
 struct super_block;
 struct inode_t;
+short __vfs_block_size;
 
 #define VFILE 	0x214c
 #define VDIR  	0x225c 
@@ -25,7 +27,7 @@ struct inode_t;
 #define SUPERSIZE sizeof(struct super_block)
 #define INODESIZE sizeof(struct inode_t)
 #define INODECOUNT 80
-#define BLOCKSIZE KBYTE
+#define BLOCKSIZE _vfs_super_block.__vfs_block_size
 #define META_BLOCKSIZE KBYTE * 4
 
 #define SUPERBLOCK_START_TABLE 0
@@ -37,7 +39,7 @@ struct inode_t;
 #define INDIRECT_BLOCK_POINTER 15
 #define MAX_FILE_NAME 32
 #define MAX_DIR_NAME 16
-#define MAX_OPENED_FILE 32
+#define MAX_OPENED_FILE META_BLOCKSIZE * 8
 
 //FILE DEFINED MACROS
 #define FILE_DEFAULT_SIZE KBYTE
@@ -99,9 +101,14 @@ struct inode_t
 
 struct super_block
 {
-    size_t all_space;
-    size_t free_space;
+    int inode_blocks;
+    int free_inode_blocks;
+	int data_blocks;
+	int free_data_blocks;
     int16_t magic_number;
+	vfs_bitmask __Inode_bitmask_table;
+	vfs_bitmask __Data_bitmask_table;
+	short __vfs_block_size;
     char fs_name[12];
 };
 
